@@ -1,0 +1,12 @@
+{
+  "name": "project-management",
+  "version": "1.0.0",
+  "description": "Task and Project Manager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
