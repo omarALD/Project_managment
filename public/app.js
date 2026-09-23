@@ -1,12 +1,22 @@
 /* ============================================================
-   Team Task Manager — Application Logic
+   Team Task Manager — Multi-project via URL path
    ============================================================ */
 
 'use strict';
 
 /* ------------------------------------------------------------
-   Constants
+   Project Detection from URL
    ------------------------------------------------------------ */
+function detectProjectFromURL() {
+  const path = window.location.pathname
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
+    .split('/')[0];
+
+  if (!path || path === 'index.html') return 'general';
+  return path.toLowerCase().replace(/[^a-z0-9-_]/g, '');
+}
+
 const API_BASE = '/api';
 
 const PRIORITY_MAP = {
@@ -16,6 +26,30 @@ const PRIORITY_MAP = {
   critical: { color: 'bg-rose-500',    label: 'Critical' }
 };
 
+// قائمة إعدادات المواد الأربع والأعضاء الخاصين بكل مادة
+const PROJECTS_CONFIG = {
+  'cs101': {
+    name: 'CS101 - Cybersecurity & Cyber Defense',
+    members: ['عمر الحميدي', 'محمد سعيد', 'سلمان الساعي', 'الجابر']
+  },
+  'sec201': {
+    name: 'SEC201 - Network Security Analysis',
+    members: ['عمر الحميدي', 'خالد', 'مشعل', 'نذير']
+  },
+  'proj301': {
+    name: 'PROJ301 - Project Management (AC condensate)',
+    members: ['عمر الحميدي', 'علي', 'عبدالرحمن']
+  },
+  'pdf401': {
+    name: 'PDF401 - GroupProject-PDF',
+    members: ['عمر الحميدي', 'أحمد', 'سعود']
+  },
+  'general': {
+    name: 'General Workspace',
+    members: ['عمر الحميدي', 'عضو 1', 'عضو 2']
+  }
+};
+
 /* ------------------------------------------------------------
    State
    ------------------------------------------------------------ */
@@ -23,14 +57,14 @@ const state = {
   tasks: [],
   isLocalMode: false,
   calendarView: 'week',
-  calendarAnchor: new Date()
+  calendarAnchor: new Date(),
+  currentProject: detectProjectFromURL()
 };
 
 /* ------------------------------------------------------------
    Utilities
    ------------------------------------------------------------ */
-const $  = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
+const $  = sel => document.querySelector(sel); const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -108,7 +142,33 @@ function escapeHTML(str) {
 }
 
 /* ------------------------------------------------------------
-   Toast Notifications
+   Project Context Setup
+   ------------------------------------------------------------ */
+function setupProjectContext() {
+  const currentKey = state.currentProject;
+  
+  const projectInfo = PROJECTS_CONFIG[currentKey] || {
+    name: `المادة: ${currentKey.toUpperCase()}`,
+    members: ['عمر الحميدي', 'عضو عام 1', 'عضو عام 2']
+  };
+
+  // 1. تحديث اسم المادة في الهيدر
+  const labelEl = document.getElementById('current-project-label');
+  if (labelEl) {
+    labelEl.textContent = projectInfo.name;
+  }
+
+  // 2. تحديث قائمة الأعضاء لهذه المادة
+  const assigneeSelect = document.getElementById('task-assignee');
+  if (assigneeSelect) {
+    assigneeSelect.innerHTML = projectInfo.members
+      .map(member => `<option value="${member}">👤 ${member}</option>`)
+      .join('');
+  }
+}
+
+/* ------------------------------------------------------------
+   Toast
    ------------------------------------------------------------ */
 function showToast(message, type = 'info', duration = 3000) {
   const container = $('#toast-container');
@@ -142,7 +202,7 @@ async function apiRequest(path, options = {}) {
 /* ------------------------------------------------------------
    LocalStorage Fallback
    ------------------------------------------------------------ */
-const LS_KEY = 'team_tasks_v4';
+const LS_KEY = 'team_tasks_multi';
 
 function loadLocalTasks() {
   try {
@@ -153,10 +213,8 @@ function loadLocalTasks() {
   }
 }
 
-function saveLocalTasks(tasks) {
-  localStorage.setItem(LS_KEY, JSON.stringify(tasks));
-  state.tasks = tasks;
-  renderAll();
+function saveLocalTasks(allTasks) {
+  localStorage.setItem(LS_KEY, JSON.stringify(allTasks));
 }
 
 /* ------------------------------------------------------------
@@ -172,15 +230,19 @@ async function fetchTasks(silent = false) {
       throw new Error('Local-only environment');
     }
 
-    const tasks = await apiRequest('/tasks');
+    const tasks = await apiRequest(
+      `/tasks?project=${encodeURIComponent(state.currentProject)}`
+    );
     state.tasks = Array.isArray(tasks) ? tasks : [];
     state.isLocalMode = false;
     updateConnectionStatus(true);
     renderAll();
   } catch (err) {
-    if (!silent) console.warn('API unreachable, using local mode:', err.message);
+    if (!silent) console.warn('API unreachable, local mode:', err.message);
     state.isLocalMode = true;
-    state.tasks = loadLocalTasks();
+    state.tasks = loadLocalTasks().filter(
+      t => t.project === state.currentProject
+    );
     updateConnectionStatus(false);
     renderAll();
   }
@@ -610,19 +672,27 @@ function renderAll() {
    Task Actions
    ------------------------------------------------------------ */
 async function createTask(payload) {
+  const fullPayload = { ...payload, project: state.currentProject };
+
   if (state.isLocalMode) {
     const task = {
       id: uid(),
-      ...payload,
+      ...fullPayload,
       createdAt: new Date().toISOString()
     };
-    saveLocalTasks([task, ...state.tasks]);
+    const all = loadLocalTasks();
+    saveLocalTasks([task, ...all]);
+    state.tasks = [task, ...state.tasks];
+    renderAll();
     showToast('Task created', 'success');
     return;
   }
 
   try {
-    await apiRequest('/tasks', { method: 'POST', body: JSON.stringify(payload) });
+    await apiRequest('/tasks', {
+      method: 'POST',
+      body: JSON.stringify(fullPayload)
+    });
     showToast('Task created', 'success');
     await fetchTasks(true);
   } catch (err) {
@@ -632,14 +702,19 @@ async function createTask(payload) {
 
 async function updateStatus(id, status) {
   if (state.isLocalMode) {
-    const updated = state.tasks.map(t => (t.id === id ? { ...t, status } : t));
-    saveLocalTasks(updated);
+    const all = loadLocalTasks().map(t => (t.id === id ? { ...t, status } : t));
+    saveLocalTasks(all);
+    state.tasks = state.tasks.map(t => (t.id === id ? { ...t, status } : t));
+    renderAll();
     showToast(`Moved to ${status}`, 'info', 1500);
     return;
   }
 
   try {
-    await apiRequest(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify({ status }) });
+    await apiRequest(`/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
     showToast(`Moved to ${status}`, 'success', 1500);
     await fetchTasks(true);
   } catch (err) {
@@ -651,7 +726,10 @@ async function deleteTask(id) {
   if (!confirm('Delete this task permanently?')) return;
 
   if (state.isLocalMode) {
-    saveLocalTasks(state.tasks.filter(t => t.id !== id));
+    const all = loadLocalTasks().filter(t => t.id !== id);
+    saveLocalTasks(all);
+    state.tasks = state.tasks.filter(t => t.id !== id);
+    renderAll();
     showToast('Task deleted', 'info');
     return;
   }
@@ -685,7 +763,6 @@ function shiftCalendar(direction) {
    Event Wiring
    ------------------------------------------------------------ */
 function bindEvents() {
-  // Quick-time buttons
   $$('.quicktime-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const h = parseInt(btn.dataset.quicktime, 10);
@@ -696,7 +773,6 @@ function bindEvents() {
     });
   });
 
-  // Refresh
   const refreshBtn = $('#btn-refresh');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', async () => {
@@ -705,7 +781,6 @@ function bindEvents() {
     });
   }
 
-  // Task form
   const form = $('#task-form');
   if (form) {
     form.addEventListener('submit', async e => {
@@ -729,11 +804,8 @@ function bindEvents() {
     });
   }
 
-  // Calendar view buttons
-  $$('.cal-view-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.calendarView = btn.dataset.calView;
-      $$('.cal-view-btn').forEach(b => {
+  $$('.cal-view-btn').forEach(btn => {     btn.addEventListener('click', () => {       state.calendarView = btn.dataset.calView;       $$
+('.cal-view-btn').forEach(b => {
         b.className = b === btn
           ? 'cal-view-btn px-3 py-1 rounded-lg bg-purple-600 text-white font-medium transition'
           : 'cal-view-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
@@ -742,7 +814,6 @@ function bindEvents() {
     });
   });
 
-  // Calendar navigation
   const prevBtn = $('#cal-prev');
   const nextBtn = $('#cal-next');
   const todayBtn = $('#cal-today');
@@ -755,7 +826,6 @@ function bindEvents() {
     });
   }
 
-  // Delegated card actions
   document.body.addEventListener('click', e => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -764,7 +834,6 @@ function bindEvents() {
     else if (action === 'status') updateStatus(id, status);
   });
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     const tag = document.activeElement?.tagName;
     const isTyping = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
@@ -797,21 +866,19 @@ function startTicker() {
    ------------------------------------------------------------ */
 async function init() {
   bindEvents();
+  setupProjectContext(); // يضبط الأعضاء واسم المادة في الهيدر
 
-  // Default deadline: +24h
-  const d = new Date();
-  d.setHours(d.getHours() + 24);
+  document.title = `${state.currentProject.toUpperCase()} — Team Task Manager`;
+
+  const defaultDeadline = new Date();
+  defaultDeadline.setHours(defaultDeadline.getHours() + 24);
   const deadlineEl = $('#task-deadline');
-  if (deadlineEl) deadlineEl.value = toLocalISO(d);
+  if (deadlineEl) deadlineEl.value = toLocalISO(defaultDeadline);
 
   await fetchTasks();
-
   startTicker();
 
-  // Poll backend every 15s
   setInterval(() => fetchTasks(true), 15000);
-
-  // Re-render calendar every minute (for "now" line)
   setInterval(() => {
     if (state.calendarView === 'day') renderCalendar();
   }, 60000);

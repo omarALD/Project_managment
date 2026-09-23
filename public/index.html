@@ -6,7 +6,7 @@
   <title>Team Task Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 selection:bg-indigo-500 selection:text-white">
 
@@ -26,7 +26,9 @@
       <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">
         🚀 Team Task Manager
       </h1>
-      <p class="text-xs md:text-sm text-slate-400 mt-1">Shared workspace for tasks and deadlines</p>
+      <p class="text-xs md:text-sm text-slate-400 mt-1">
+        Workspace: <span id="current-project-label" class="font-bold text-indigo-400">...</span>
+      </p>
     </div>
     <div class="flex items-center gap-3">
       <span id="connection-status" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
@@ -50,7 +52,6 @@
 
       <form id="task-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
 
-        <!-- Task Title -->
         <div class="lg:col-span-5">
           <label class="block text-[11px] font-medium text-slate-400 mb-1">Task Name</label>
           <input
@@ -63,7 +64,6 @@
           >
         </div>
 
-        <!-- Assignee -->
         <div class="lg:col-span-2">
           <label class="block text-[11px] font-medium text-slate-400 mb-1">Assignee</label>
           <select id="task-assignee" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
@@ -74,7 +74,6 @@
           </select>
         </div>
 
-        <!-- Priority -->
         <div class="lg:col-span-2">
           <label class="block text-[11px] font-medium text-slate-400 mb-1">Priority</label>
           <select id="task-priority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
@@ -85,7 +84,6 @@
           </select>
         </div>
 
-        <!-- Deadline -->
         <div class="lg:col-span-3">
           <div class="flex justify-between items-center mb-1">
             <label class="block text-[11px] font-medium text-slate-400">Deadline</label>
@@ -103,7 +101,6 @@
           >
         </div>
 
-        <!-- Submit -->
         <div class="lg:col-span-12 flex justify-end">
           <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl py-2.5 px-6 text-sm transition shadow-lg shadow-indigo-600/25 active:scale-[0.98] flex items-center justify-center gap-1.5">
             <span>+</span> Create Task
@@ -157,14 +154,12 @@
         </h2>
 
         <div class="flex flex-wrap items-center gap-3">
-          <!-- View Switch -->
           <div class="flex bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs">
             <button data-cal-view="day" class="cal-view-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Day</button>
             <button data-cal-view="week" class="cal-view-btn px-3 py-1 rounded-lg bg-purple-600 text-white font-medium transition">Week</button>
             <button data-cal-view="month" class="cal-view-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Month</button>
           </div>
 
-          <!-- Navigation -->
           <div class="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1">
             <button id="cal-prev" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition text-sm">←</button>
             <button id="cal-today" class="px-3 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition text-xs font-medium">Today</button>
@@ -173,16 +168,13 @@
         </div>
       </div>
 
-      <!-- Calendar Title -->
       <div class="mt-4 mb-4 flex items-center justify-between">
         <h3 id="cal-title" class="text-lg font-bold text-slate-100">—</h3>
         <div id="cal-range" class="text-xs text-slate-400 font-mono"></div>
       </div>
 
-      <!-- Calendar Grid Container -->
       <div id="calendar-container" class="overflow-x-auto"></div>
 
-      <!-- Calendar Legend -->
       <div class="mt-4 pt-4 border-t border-slate-800/80 flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> To Do</span>
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> In Progress</span>
@@ -193,6 +185,6 @@
 
   </main>
 
-  <script src="app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
