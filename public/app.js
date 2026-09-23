@@ -10,61 +10,8 @@
    ------------------------------------------------------------ */
 const API_BASE = '/api';
 
-const DEADLINE_TEMPLATES = [
-  {
-    id: 'meeting',
-    label: 'Quick Meeting',
-    icon: '☕',
-    hoursFromNow: 2,
-    priority: 'medium',
-    category: 'meeting',
-    accent: 'amber'
-  },
-  {
-    id: 'review',
-    label: 'Code Review',
-    icon: '👀',
-    hoursFromNow: 24,
-    priority: 'high',
-    category: 'review',
-    accent: 'blue'
-  },
-  {
-    id: 'bugfix',
-    label: 'Bug Fix (24h)',
-    icon: '🐛',
-    hoursFromNow: 24,
-    priority: 'critical',
-    category: 'bugfix',
-    accent: 'rose'
-  },
-  {
-    id: 'sprint',
-    label: 'Sprint Task (1w)',
-    icon: '🏃',
-    hoursFromNow: 168,
-    priority: 'medium',
-    category: 'sprint',
-    accent: 'purple'
-  },
-  {
-    id: 'deploy',
-    label: 'Deployment (2w)',
-    icon: '🚀',
-    hoursFromNow: 336,
-    priority: 'high',
-    category: 'deploy',
-    accent: 'emerald'
-  }
-];
 
-const ACCENT_MAP = {
-  amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   text: 'text-amber-300',   dot: 'bg-amber-400' },
-  blue:    { bg: 'bg-blue-500/10',    border: 'border-blue-500/30',    text: 'text-blue-300',    dot: 'bg-blue-400' },
-  rose:    { bg: 'bg-rose-500/10',    border: 'border-rose-500/30',    text: 'text-rose-300',    dot: 'bg-rose-400' },
-  purple:  { bg: 'bg-purple-500/10',  border: 'border-purple-500/30',  text: 'text-purple-300',  dot: 'bg-purple-400' },
-  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-300', dot: 'bg-emerald-400' }
-};
+
 
 const PRIORITY_MAP = {
   low:      { color: 'bg-emerald-500', label: 'Low' },
@@ -79,7 +26,6 @@ const PRIORITY_MAP = {
 const state = {
   tasks: [],
   isLocalMode: false,
-  timelineFilter: 'all',
   calendarView: 'week',      // 'day' | 'week' | 'month'
   calendarAnchor: new Date() // reference date
 };
@@ -339,47 +285,9 @@ function getDeadlineInfo(task) {
 /* ------------------------------------------------------------
    Templates Rendering
    ------------------------------------------------------------ */
-function renderTemplates() {
-  const grid = $('#templates-grid');
-  grid.innerHTML = DEADLINE_TEMPLATES.map(tpl => {
-    const a = ACCENT_MAP[tpl.accent];
-    return `
-      <button
-        type="button"
-        class="template-card glass-panel rounded-2xl p-3 border ${a.border} text-left group"
-        data-template="${tpl.id}"
-        title="${escapeHTML(tpl.label)}"
-      >
-        <div class="flex items-center gap-2 mb-1.5">
-          <span class="text-lg">${tpl.icon}</span>
-          <span class="w-2 h-2 rounded-full ${a.dot}"></span>
-        </div>
-        <div class="text-xs font-semibold ${a.text} leading-tight">${escapeHTML(tpl.label)}</div>
-        <div class="text-[10px] text-slate-500 mt-1">+${tpl.hoursFromNow}h • ${tpl.priority}</div>
-      </button>
-    `;
-  }).join('');
-}
 
-function applyTemplate(templateId) {
-  const tpl = DEADLINE_TEMPLATES.find(t => t.id === templateId);
-  if (!tpl) return;
 
-  const deadline = new Date();
-  deadline.setHours(deadline.getHours() + tpl.hoursFromNow);
 
-  $('#task-deadline').value = toLocalISO(deadline);
-  $('#task-priority').value = tpl.priority;
-
-  // Visual feedback
-  const card = $(`[data-template="${templateId}"]`);
-  if (card) {
-    card.style.transform = 'scale(0.95)';
-    setTimeout(() => (card.style.transform = ''), 150);
-  }
-
-  showToast(`Applied template: ${tpl.label}`, 'info', 2000);
-}
 
 /* ------------------------------------------------------------
    Kanban Rendering
@@ -451,19 +359,7 @@ function renderKanban() {
 /* ------------------------------------------------------------
    Timeline (Gantt) Rendering
    ------------------------------------------------------------ */
-function renderTimeline() {
-  const container = $('#timeline-rows-container');
-  container.innerHTML = '';
 
-  let filtered = state.tasks;
-  if (state.timelineFilter === 'active') filtered = filtered.filter(t => t.status !== 'done');
-  if (state.timelineFilter === 'done')   filtered = filtered.filter(t => t.status === 'done');
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">No timeline tasks match the selected filter.</div>`;
-    updateTimelineStats();
-    return;
-  }
 
   filtered.forEach(task => {
     const info = getDeadlineInfo(task);
@@ -522,23 +418,9 @@ function renderTimeline() {
   });
 
   updateTimelineStats();
-}
 
-function updateTimelineStats() {
-  let onTrack = 0, overdue = 0;
-  state.tasks.forEach(t => {
-    if (getDeadlineInfo(t).isOverdue) overdue++;
-    else onTrack++;
-  });
 
-  const done = state.tasks.filter(t => t.status === 'done').length;
-  const pct = state.tasks.length ? Math.round((done / state.tasks.length) * 100) : 0;
 
-  $('#tl-stat-total').textContent = state.tasks.length;
-  $('#tl-stat-ontrack').textContent = onTrack;
-  $('#tl-stat-overdue').textContent = overdue;
-  $('#tl-stat-completion').textContent = `${pct}%`;
-}
 
 /* ------------------------------------------------------------
    Calendar — Shared Helpers
@@ -789,7 +671,6 @@ function renderCalendar() {
    ------------------------------------------------------------ */
 function renderAll() {
   renderKanban();
-  renderTimeline();
   renderCalendar();
 }
 
@@ -873,10 +754,7 @@ function shiftCalendar(direction) {
    ------------------------------------------------------------ */
 function bindEvents() {
   // Template clicks
-  $('#templates-grid').addEventListener('click', e => {
-    const card = e.target.closest('[data-template]');
-    if (card) applyTemplate(card.dataset.template);
-  });
+
 
   // Quick-time buttons
   $$('.quicktime-btn').forEach(btn => {
@@ -913,18 +791,6 @@ function bindEvents() {
   });
 
   // Timeline filter
-  $$('[data-tl-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.timelineFilter = btn.dataset.tlFilter;
-      ['all', 'active', 'done'].forEach(f => {
-        const b = $(`#tl-filter-${f}`);
-        b.className = f === state.timelineFilter
-          ? 'px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium transition'
-          : 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
-      });
-      renderTimeline();
-    });
-  });
 
   // Calendar view buttons
   $$('.cal-view-btn').forEach(btn => {
@@ -982,7 +848,7 @@ function startTicker() {
   tickerInterval = setInterval(() => {
     // Only re-render Kanban + Timeline (cheap), not calendar
     renderKanban();
-    renderTimeline();
+    
   }, 1000);
 }
 
@@ -990,7 +856,6 @@ function startTicker() {
    Bootstrap
    ------------------------------------------------------------ */
 async function init() {
-  renderTemplates();
   bindEvents();
 
   // Default deadline: +24h

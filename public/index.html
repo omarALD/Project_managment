@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Team Task & Timeline Manager — v4.0</title>
+  <title>Team Task Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
@@ -23,13 +23,10 @@
   <!-- Header -->
   <header class="max-w-7xl mx-auto mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-6">
     <div>
-      <div class="flex items-center gap-3 flex-wrap">
-        <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">
-          🚀 Team Task & Timeline Tracker
-        </h1>
-        <span class="text-xs bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-2.5 py-0.5 rounded-full font-semibold">v4.0 Calendar</span>
-      </div>
-      <p class="text-xs md:text-sm text-slate-400 mt-1">Kanban + Gantt + Interactive Calendar with Deadline Templates</p>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">
+        🚀 Team Task Manager
+      </h1>
+      <p class="text-xs md:text-sm text-slate-400 mt-1">Shared workspace for tasks and deadlines</p>
     </div>
     <div class="flex items-center gap-3">
       <span id="connection-status" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
@@ -46,19 +43,15 @@
 
     <!-- Add Task Form -->
     <section class="glass-panel p-6 rounded-3xl shadow-2xl relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl"></div>
-
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-          <span class="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg">✨</span> Create New Task
-        </h2>
-        <span class="text-xs text-slate-400 hidden sm:block">Tip: press <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 text-[10px]">Ctrl+K</kbd> to focus</span>
-      </div>
+      <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-4">
+        <span class="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg">✨</span>
+        Create New Task
+      </h2>
 
       <form id="task-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
 
         <!-- Task Title -->
-        <div class="lg:col-span-4">
+        <div class="lg:col-span-5">
           <label class="block text-[11px] font-medium text-slate-400 mb-1">Task Name</label>
           <input
             type="text"
@@ -93,9 +86,9 @@
         </div>
 
         <!-- Deadline -->
-        <div class="lg:col-span-4">
+        <div class="lg:col-span-3">
           <div class="flex justify-between items-center mb-1">
-            <label class="block text-[11px] font-medium text-slate-400">Deadline Target</label>
+            <label class="block text-[11px] font-medium text-slate-400">Deadline</label>
             <div class="flex gap-1">
               <button type="button" data-quicktime="2" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">+2h</button>
               <button type="button" data-quicktime="24" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">+1d</button>
@@ -117,21 +110,6 @@
           </button>
         </div>
       </form>
-
-      <!-- ═══ Deadline Templates (scroll-reveal animation) ═══ -->
-      <div class="mt-6 pt-5 border-t border-slate-800/80">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <span class="p-1 bg-purple-500/10 text-purple-400 rounded-md">⚡</span>
-            Quick Templates
-          </h3>
-          <span class="text-[10px] text-slate-500">Click to auto-fill deadline & priority</span>
-        </div>
-
-        <div id="templates-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <!-- Injected via JS -->
-        </div>
-      </div>
     </section>
 
     <!-- Kanban Board -->
@@ -170,16 +148,13 @@
       </div>
     </section>
 
-    <!-- ═══ CALENDAR SECTION ═══ -->
+    <!-- CALENDAR SECTION -->
     <section class="glass-panel p-6 rounded-3xl shadow-2xl border border-purple-500/20 relative overflow-hidden">
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b border-slate-800">
-        <div>
-          <h2 class="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2">
-            <span class="p-2 bg-purple-500/10 text-purple-400 rounded-xl">📅</span>
-            Deadline Calendar
-          </h2>
-          <p class="text-xs text-slate-400 mt-1">Interactive calendar with Day / Week / Month views</p>
-        </div>
+        <h2 class="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2">
+          <span class="p-2 bg-purple-500/10 text-purple-400 rounded-xl">📅</span>
+          Deadline Calendar
+        </h2>
 
         <div class="flex flex-wrap items-center gap-3">
           <!-- View Switch -->
@@ -205,9 +180,7 @@
       </div>
 
       <!-- Calendar Grid Container -->
-      <div id="calendar-container" class="overflow-x-auto">
-        <!-- Populated via JS -->
-      </div>
+      <div id="calendar-container" class="overflow-x-auto"></div>
 
       <!-- Calendar Legend -->
       <div class="mt-4 pt-4 border-t border-slate-800/80 flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
@@ -215,64 +188,6 @@
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> In Progress</span>
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Done</span>
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Overdue</span>
-        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Today</span>
-      </div>
-    </section>
-
-    <!-- Timeline Diagram (kept from v3) -->
-    <section class="glass-panel p-6 rounded-3xl shadow-2xl space-y-6 border border-indigo-500/20 relative overflow-hidden">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-800">
-        <div>
-          <h2 class="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2">
-            <span class="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">📈</span>
-            Project Timeline Diagram
-          </h2>
-          <p class="text-xs text-slate-400 mt-1">Visual Gantt timeline of all active and completed tasks</p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs">
-            <button data-tl-filter="all" id="tl-filter-all" class="px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium transition">All</button>
-            <button data-tl-filter="active" id="tl-filter-active" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Active</button>
-            <button data-tl-filter="done" id="tl-filter-done" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Done</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto">
-        <div class="min-w-[700px] space-y-4">
-          <div class="grid grid-cols-12 gap-2 text-center text-[11px] font-semibold text-slate-400 pb-2 border-b border-slate-800/80">
-            <div class="col-span-3 text-left pl-2">TASK & ASSIGNEE</div>
-            <div class="col-span-9 grid grid-cols-6 text-slate-500 text-[10px] uppercase tracking-wider">
-              <span>Start</span>
-              <span>Phase 1</span>
-              <span>Phase 2</span>
-              <span>Midpoint</span>
-              <span>Review</span>
-              <span class="text-indigo-400">Target</span>
-            </div>
-          </div>
-          <div id="timeline-rows-container" class="space-y-3"></div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-800/80 text-xs">
-        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-          <span class="text-slate-400 text-[11px]">Total Tasks</span>
-          <span id="tl-stat-total" class="text-lg font-bold text-slate-200 mt-1 block">0</span>
-        </div>
-        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-          <span class="text-slate-400 text-[11px]">On Track</span>
-          <span id="tl-stat-ontrack" class="text-lg font-bold text-emerald-400 mt-1 block">0</span>
-        </div>
-        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-          <span class="text-slate-400 text-[11px]">Overdue</span>
-          <span id="tl-stat-overdue" class="text-lg font-bold text-rose-400 mt-1 block">0</span>
-        </div>
-        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-          <span class="text-slate-400 text-[11px]">Completion</span>
-          <span id="tl-stat-completion" class="text-lg font-bold text-indigo-400 mt-1 block">0%</span>
-        </div>
       </div>
     </section>
 
