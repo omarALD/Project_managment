@@ -1,6 +1,5 @@
 /* ============================================================
-   Team Task & Timeline Manager v4.0
-   Calendar + Templates + Kanban + Gantt
+   Team Task Manager — Application Logic
    ============================================================ */
 
 'use strict';
@@ -9,9 +8,6 @@
    Constants
    ------------------------------------------------------------ */
 const API_BASE = '/api';
-
-
-
 
 const PRIORITY_MAP = {
   low:      { color: 'bg-emerald-500', label: 'Low' },
@@ -26,8 +22,8 @@ const PRIORITY_MAP = {
 const state = {
   tasks: [],
   isLocalMode: false,
-  calendarView: 'week',      // 'day' | 'week' | 'month'
-  calendarAnchor: new Date() // reference date
+  calendarView: 'week',
+  calendarAnchor: new Date()
 };
 
 /* ------------------------------------------------------------
@@ -60,7 +56,6 @@ function endOfDay(date) {
 }
 
 function startOfWeek(date) {
-  // Sunday-start week
   const d = startOfDay(date);
   d.setDate(d.getDate() - d.getDay());
   return d;
@@ -117,6 +112,7 @@ function escapeHTML(str) {
    ------------------------------------------------------------ */
 function showToast(message, type = 'info', duration = 3000) {
   const container = $('#toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.textContent = message;
@@ -177,7 +173,7 @@ async function fetchTasks(silent = false) {
     }
 
     const tasks = await apiRequest('/tasks');
-    state.tasks = tasks;
+    state.tasks = Array.isArray(tasks) ? tasks : [];
     state.isLocalMode = false;
     updateConnectionStatus(true);
     renderAll();
@@ -192,6 +188,7 @@ async function fetchTasks(silent = false) {
 
 function updateConnectionStatus(online) {
   const el = $('#connection-status');
+  if (!el) return;
   if (online) {
     el.className =
       'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
@@ -283,13 +280,6 @@ function getDeadlineInfo(task) {
 }
 
 /* ------------------------------------------------------------
-   Templates Rendering
-   ------------------------------------------------------------ */
-
-
-
-
-/* ------------------------------------------------------------
    Kanban Rendering
    ------------------------------------------------------------ */
 function renderKanban() {
@@ -299,11 +289,10 @@ function renderKanban() {
     done: $('#col-done')
   };
 
-  Object.values(cols).forEach(c => (c.innerHTML = ''));
+  Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
 
   const counts = { todo: 0, 'in-progress': 0, done: 0 };
 
-  // Sort by priority then deadline
   const priorityWeight = { critical: 0, high: 1, medium: 2, low: 3 };
   const sorted = [...state.tasks].sort((a, b) => {
     const pa = priorityWeight[a.priority] ?? 2;
@@ -338,7 +327,6 @@ function renderKanban() {
 
       <div class="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
         <span class="flex items-center gap-1 font-medium text-slate-300 truncate">👤 ${escapeHTML(task.assignee)}</span>
-        ${task.category && task.category !== 'general' ? `<span class="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-400">${escapeHTML(task.category)}</span>` : ''}
       </div>
 
       <div class="pt-2 flex gap-1.5 text-[11px]">
@@ -351,79 +339,16 @@ function renderKanban() {
     if (cols[task.status]) cols[task.status].appendChild(card);
   });
 
-  $('#count-todo').textContent = counts.todo;
-  $('#count-in-progress').textContent = counts['in-progress'];
-  $('#count-done').textContent = counts.done;
+  const elTodo = $('#count-todo');
+  const elProg = $('#count-in-progress');
+  const elDone = $('#count-done');
+  if (elTodo) elTodo.textContent = counts.todo;
+  if (elProg) elProg.textContent = counts['in-progress'];
+  if (elDone) elDone.textContent = counts.done;
 }
 
 /* ------------------------------------------------------------
-   Timeline (Gantt) Rendering
-   ------------------------------------------------------------ */
-
-
-  filtered.forEach(task => {
-    const info = getDeadlineInfo(task);
-
-    let barBg = 'bg-amber-500';
-    let barGlow = 'shadow-amber-500/20';
-    let widthPercent = 40;
-
-    if (task.status === 'done') {
-      barBg = 'bg-emerald-500';
-      barGlow = 'shadow-emerald-500/20';
-      widthPercent = 100;
-    } else if (task.status === 'in-progress') {
-      barBg = 'bg-gradient-to-r from-indigo-500 to-purple-500';
-      barGlow = 'shadow-indigo-500/30';
-      widthPercent = info.isOverdue ? 100 : Math.max(25, info.percent);
-      if (info.isOverdue) barBg = 'bg-gradient-to-r from-rose-500 to-amber-500';
-    } else if (info.isOverdue) {
-      barBg = 'bg-rose-500';
-      barGlow = 'shadow-rose-500/30';
-      widthPercent = 100;
-    }
-
-    const row = document.createElement('div');
-    row.className = 'grid grid-cols-12 gap-2 items-center bg-slate-900/50 p-3 rounded-2xl border border-slate-800/80 hover:border-slate-700 transition duration-200';
-
-    row.innerHTML = `
-      <div class="col-span-3 space-y-1">
-        <div class="font-bold text-xs text-slate-100 truncate">${escapeHTML(task.title)}</div>
-        <div class="flex items-center gap-2 text-[10px] text-slate-400">
-          <span>👤 ${escapeHTML(task.assignee)}</span>
-          <span class="text-slate-600">•</span>
-          <span class="font-mono">${task.deadline ? task.deadline.replace('T', ' ') : 'No deadline'}</span>
-        </div>
-      </div>
-
-      <div class="col-span-9 relative flex items-center h-8 bg-slate-950/80 rounded-xl p-1 border border-slate-800/80 overflow-hidden">
-        <div class="absolute inset-0 grid grid-cols-6 pointer-events-none opacity-20">
-          <div class="border-r border-slate-400"></div>
-          <div class="border-r border-slate-400"></div>
-          <div class="border-r border-slate-400"></div>
-          <div class="border-r border-slate-400"></div>
-          <div class="border-r border-slate-400"></div>
-          <div></div>
-        </div>
-        <div class="h-full rounded-lg ${barBg} transition-all duration-500 flex items-center justify-between px-2.5 shadow-lg ${barGlow} relative z-10" style="width:${widthPercent}%">
-          <span class="text-[10px] font-bold text-white drop-shadow truncate">
-            ${task.status === 'done' ? '✅ Completed' : info.label}
-          </span>
-          <span class="text-[9px] font-mono text-white/90 font-semibold hidden sm:inline">${widthPercent}%</span>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(row);
-  });
-
-  updateTimelineStats();
-
-
-
-
-/* ------------------------------------------------------------
-   Calendar — Shared Helpers
+   Calendar — Helpers
    ------------------------------------------------------------ */
 function taskColorClass(task) {
   const info = getDeadlineInfo(task);
@@ -457,10 +382,11 @@ function renderMonthView() {
   const monthStart = startOfMonth(anchor);
   const monthEnd = endOfMonth(anchor);
 
-  $('#cal-title').textContent = formatDate(anchor, { month: 'long', year: 'numeric' });
-  $('#cal-range').textContent = `${formatDate(monthStart, { month: 'short', day: 'numeric' })} → ${formatDate(monthEnd, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  const titleEl = $('#cal-title');
+  const rangeEl = $('#cal-range');
+  if (titleEl) titleEl.textContent = formatDate(anchor, { month: 'long', year: 'numeric' });
+  if (rangeEl) rangeEl.textContent = `${formatDate(monthStart, { month: 'short', day: 'numeric' })} → ${formatDate(monthEnd, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
-  // Build a 6-week grid starting from the Sunday of the first week
   const gridStart = startOfWeek(monthStart);
   const days = [];
   for (let i = 0; i < 42; i++) days.push(addDays(gridStart, i));
@@ -495,7 +421,7 @@ function renderMonthView() {
           const more = tasks.length - visible.length;
 
           return `
-            <div class="${cls}" data-date="${day.toISOString()}">
+            <div class="${cls}">
               <div class="text-[11px] font-bold ${today ? 'text-purple-300' : isCurrentMonth ? 'text-slate-300' : 'text-slate-500'}">
                 ${day.getDate()}
               </div>
@@ -513,7 +439,8 @@ function renderMonthView() {
     </div>
   `;
 
-  $('#calendar-container').innerHTML = html;
+  const container = $('#calendar-container');
+  if (container) container.innerHTML = html;
 }
 
 /* ------------------------------------------------------------
@@ -524,8 +451,10 @@ function renderWeekView() {
   const weekStart = startOfWeek(anchor);
   const weekEnd = endOfWeek(anchor);
 
-  $('#cal-title').textContent = `Week of ${formatDate(weekStart, { month: 'long', day: 'numeric', year: 'numeric' })}`;
-  $('#cal-range').textContent = `${formatDate(weekStart, { month: 'short', day: 'numeric' })} → ${formatDate(weekEnd, { month: 'short', day: 'numeric' })}`;
+  const titleEl = $('#cal-title');
+  const rangeEl = $('#cal-range');
+  if (titleEl) titleEl.textContent = `Week of ${formatDate(weekStart, { month: 'long', day: 'numeric', year: 'numeric' })}`;
+  if (rangeEl) rangeEl.textContent = `${formatDate(weekStart, { month: 'short', day: 'numeric' })} → ${formatDate(weekEnd, { month: 'short', day: 'numeric' })}`;
 
   const days = [];
   for (let i = 0; i < 7; i++) days.push(addDays(weekStart, i));
@@ -573,7 +502,7 @@ function renderWeekView() {
                         <div class="cal-event ${c.bg} ${c.text} border-l-2 ${c.border} !whitespace-normal !text-[10px] leading-tight p-1.5" title="${escapeHTML(t.title)}">
                           <div class="font-mono text-[9px] opacity-70">${time}</div>
                           <div class="font-semibold">${escapeHTML(t.title)}</div>
-                          <div class="text-[9px] opacity-60 mt-0.5">👤 ${escapeHTML(t.assignee.split(' ')[0])}</div>
+                          <div class="text-[9px] opacity-60 mt-0.5">👤 ${escapeHTML((t.assignee || '').split(' ')[0])}</div>
                         </div>
                       `;
                     }).join('')
@@ -586,7 +515,8 @@ function renderWeekView() {
     </div>
   `;
 
-  $('#calendar-container').innerHTML = html;
+  const container = $('#calendar-container');
+  if (container) container.innerHTML = html;
 }
 
 /* ------------------------------------------------------------
@@ -594,10 +524,11 @@ function renderWeekView() {
    ------------------------------------------------------------ */
 function renderDayView() {
   const anchor = state.calendarAnchor;
-  const dayStart = startOfDay(anchor);
 
-  $('#cal-title').textContent = formatDate(anchor, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  $('#cal-range').textContent = isToday(anchor) ? 'Today' : '';
+  const titleEl = $('#cal-title');
+  const rangeEl = $('#cal-range');
+  if (titleEl) titleEl.textContent = formatDate(anchor, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  if (rangeEl) rangeEl.textContent = isToday(anchor) ? 'Today' : '';
 
   const tasks = tasksOnDay(anchor);
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -654,7 +585,8 @@ function renderDayView() {
     </div>
   `;
 
-  $('#calendar-container').innerHTML = html;
+  const container = $('#calendar-container');
+  if (container) container.innerHTML = html;
 }
 
 /* ------------------------------------------------------------
@@ -685,7 +617,7 @@ async function createTask(payload) {
       createdAt: new Date().toISOString()
     };
     saveLocalTasks([task, ...state.tasks]);
-    showToast('Task created (local)', 'success');
+    showToast('Task created', 'success');
     return;
   }
 
@@ -753,44 +685,49 @@ function shiftCalendar(direction) {
    Event Wiring
    ------------------------------------------------------------ */
 function bindEvents() {
-  // Template clicks
-
-
   // Quick-time buttons
   $$('.quicktime-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const h = parseInt(btn.dataset.quicktime, 10);
       const d = new Date();
       d.setHours(d.getHours() + h);
-      $('#task-deadline').value = toLocalISO(d);
+      const el = $('#task-deadline');
+      if (el) el.value = toLocalISO(d);
     });
   });
 
   // Refresh
-  $('#btn-refresh').addEventListener('click', async () => {
-    showToast('Refreshing...', 'info', 1200);
-    await fetchTasks();
-  });
+  const refreshBtn = $('#btn-refresh');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      showToast('Refreshing...', 'info', 1200);
+      await fetchTasks();
+    });
+  }
 
   // Task form
-  $('#task-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const title = $('#task-title').value.trim();
-    if (!title) return;
+  const form = $('#task-form');
+  if (form) {
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const titleEl = $('#task-title');
+      const title = titleEl ? titleEl.value.trim() : '';
+      if (!title) return;
 
-    await createTask({
-      title,
-      assignee: $('#task-assignee').value,
-      deadline: $('#task-deadline').value,
-      priority: $('#task-priority').value,
-      status: 'todo'
+      await createTask({
+        title,
+        assignee: $('#task-assignee')?.value || 'Unassigned',
+        deadline: $('#task-deadline')?.value || '',
+        priority: $('#task-priority')?.value || 'medium',
+        status: 'todo'
+      });
+
+      if (titleEl) {
+        titleEl.value = '';
+        titleEl.focus();
+      }
     });
-
-    $('#task-title').value = '';
-    $('#task-title').focus();
-  });
-
-  // Timeline filter
+  }
 
   // Calendar view buttons
   $$('.cal-view-btn').forEach(btn => {
@@ -806,14 +743,19 @@ function bindEvents() {
   });
 
   // Calendar navigation
-  $('#cal-prev').addEventListener('click', () => shiftCalendar(-1));
-  $('#cal-next').addEventListener('click', () => shiftCalendar(1));
-  $('#cal-today').addEventListener('click', () => {
-    state.calendarAnchor = new Date();
-    renderCalendar();
-  });
+  const prevBtn = $('#cal-prev');
+  const nextBtn = $('#cal-next');
+  const todayBtn = $('#cal-today');
+  if (prevBtn) prevBtn.addEventListener('click', () => shiftCalendar(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => shiftCalendar(1));
+  if (todayBtn) {
+    todayBtn.addEventListener('click', () => {
+      state.calendarAnchor = new Date();
+      renderCalendar();
+    });
+  }
 
-  // Delegated card actions (Kanban)
+  // Delegated card actions
   document.body.addEventListener('click', e => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -824,15 +766,15 @@ function bindEvents() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      $('#task-title').focus();
-    }
+    const tag = document.activeElement?.tagName;
+    const isTyping = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
+
     if (e.key === 'Escape') {
       document.activeElement?.blur();
+      return;
     }
-    // Arrow navigation in calendar (only when not typing)
-    if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'SELECT') {
+
+    if (!isTyping) {
       if (e.key === 'ArrowLeft') shiftCalendar(-1);
       if (e.key === 'ArrowRight') shiftCalendar(1);
     }
@@ -840,15 +782,13 @@ function bindEvents() {
 }
 
 /* ------------------------------------------------------------
-   Live Ticker — updates countdown timers every second
+   Live Ticker
    ------------------------------------------------------------ */
 let tickerInterval = null;
 function startTicker() {
   if (tickerInterval) return;
   tickerInterval = setInterval(() => {
-    // Only re-render Kanban + Timeline (cheap), not calendar
     renderKanban();
-    
   }, 1000);
 }
 
@@ -861,7 +801,8 @@ async function init() {
   // Default deadline: +24h
   const d = new Date();
   d.setHours(d.getHours() + 24);
-  $('#task-deadline').value = toLocalISO(d);
+  const deadlineEl = $('#task-deadline');
+  if (deadlineEl) deadlineEl.value = toLocalISO(d);
 
   await fetchTasks();
 
@@ -870,7 +811,7 @@ async function init() {
   // Poll backend every 15s
   setInterval(() => fetchTasks(true), 15000);
 
-  // Re-render calendar hourly to update "now" line
+  // Re-render calendar every minute (for "now" line)
   setInterval(() => {
     if (state.calendarView === 'day') renderCalendar();
   }, 60000);
