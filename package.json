@@ -1,13 +1,19 @@
 {
-  "name": "project-management",
-  "version": "1.0.0",
-  "description": "Task and Project Manager",
+  "name": "team-task-timeline",
+  "version": "4.0.0",
+  "description": "Team Task & Timeline Manager with Calendar Views",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^8.24.4"
+    "express": "^4.19.2",
+    "mongoose": "^8.5.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.4.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

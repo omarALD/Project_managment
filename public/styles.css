@@ -1,0 +1,227 @@
+/* ============================================
+   Team Task & Timeline Manager v4.0
+   ============================================ */
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.02); }
+}
+
+.animate-glow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #020617; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+/* ═══════════════════════════════════════════
+   TEMPLATE CARDS — Scroll-Reveal Animation
+   ═══════════════════════════════════════════ */
+
+.template-card {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: templateReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.template-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.4);
+}
+
+.template-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.template-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.template-card:hover::before {
+  transform: translateX(100%);
+}
+
+@keyframes templateReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger delays via nth-child */
+.template-card:nth-child(1) { animation-delay: 0.05s; }
+.template-card:nth-child(2) { animation-delay: 0.10s; }
+.template-card:nth-child(3) { animation-delay: 0.15s; }
+.template-card:nth-child(4) { animation-delay: 0.20s; }
+.template-card:nth-child(5) { animation-delay: 0.25s; }
+
+/* ═══════════════════════════════════════════
+   CALENDAR
+   ═══════════════════════════════════════════ */
+
+.cal-cell {
+  transition: background 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  min-height: 96px;
+}
+
+.cal-cell:hover {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.cal-cell.today {
+  border-color: rgba(168, 85, 247, 0.6) !important;
+  background: rgba(168, 85, 247, 0.06);
+}
+
+.cal-cell.today::after {
+  content: 'TODAY';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #a855f7;
+  letter-spacing: 0.5px;
+}
+
+.cal-cell.other-month {
+  opacity: 0.35;
+}
+
+.cal-event {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  border-left: 3px solid;
+}
+
+.cal-event:hover {
+  transform: translateX(2px);
+  filter: brightness(1.2);
+}
+
+/* Day view / Week view hour slots */
+.cal-hour-slot {
+  border-top: 1px solid rgba(30, 41, 59, 0.6);
+  min-height: 44px;
+  position: relative;
+}
+
+.cal-hour-slot:hover {
+  background: rgba(30, 41, 59, 0.3);
+}
+
+.cal-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 5;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.cal-now-line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════ */
+
+.toast {
+  min-width: 260px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(12px);
+  border: 1px solid;
+  animation: toastIn 0.3s ease-out;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+}
+
+.toast.success {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+.toast.error {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fda4af;
+}
+.toast.info {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.toast.removing {
+  animation: toastOut 0.25s ease-in forwards;
+}
+
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(30px); }
+}
+
+/* ═══════════════════════════════════════════
+   MISC
+   ═══════════════════════════════════════════ */
+
+kbd {
+  font-family: ui-monospace, monospace;
+}
+
+/* Reveal-on-scroll utility */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
