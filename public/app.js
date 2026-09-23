@@ -34,20 +34,20 @@ const PRIORITY_MAP = {
 // Omar Alhomidi
 // عبد الهادي = 
 const PROJECTS_CONFIG = {
-  'CMPS307': {
-    name: 'CMPS307 - Introduction to project management and enterprise',
+  'cmps307': {
+    name: 'cmps307 - Introduction to project management and enterprise',
     members: ['Omar Alhomidi', 'Mohammad Saeid', 'Salman Alsaai', 'Abdulrahman Alajbar']
   },
-  'CMPS310': {
-    name: 'CMPS 310 - Software Engineering',
+  'cmps310': {
+    name: 'cmps 310 - Software Engineering',
     members: ['Sidi Mohammed', 'Jassim Almurrikhi', 'Omar Alhomidi']
   },
-  'CMPS200': {
-    name: 'CMPS200 - Computer Ethics',
+  'cmps200': {
+    name: 'cmps200 - Computer Ethics',
     members: ['Omar Alhomidi', 'Jassim Almurrikhi', 'Saad Abdulkadder','Abdelrahman Abusleibeh']
   },
-  'CMPS303': {
-    name: 'CMPS303 - Data Structures and Algorithms',
+  'cmps303': {
+    name: 'cmps303 - Data Structures and Algorithms',
     members: ['Omar Alhomidi', 'Saad Abdulkadder', 'Abdulhadi']
   },
   'general': {
