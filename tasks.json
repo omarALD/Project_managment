@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1789991242022",
+    "title": "create a prototype",
+    "assignee": "Omar Al-Humaidi",
+    "deadline": "2026-09-22",
+    "status": "todo",
+    "createdAt": "2026-09-21T11:47:22.022Z"
+  },
+  {
+    "id": "1789992365052",
+    "title": "send the link",
+    "assignee": "Omar Al-Humaidi",
+    "deadline": "2026-09-21",
+    "status": "in-progress",
+    "createdAt": "2026-09-21T12:06:05.052Z"
+  }
+]
