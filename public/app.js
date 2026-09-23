@@ -27,26 +27,32 @@ const PRIORITY_MAP = {
 };
 
 // قائمة إعدادات المواد الأربع والأعضاء الخاصين بكل مادة
+// Sidi Mohammed
+// Jassim Almurrikhi
+// Abdelrahman Abusleibeh
+// Saad Abdulkadder
+// Omar Alhomidi
+// عبد الهادي = 
 const PROJECTS_CONFIG = {
-  'cs101': {
-    name: 'CS101 - Cybersecurity & Cyber Defense',
-    members: ['عمر الحميدي', 'محمد سعيد', 'سلمان الساعي', 'الجابر']
+  'CMPS307': {
+    name: 'CMPS307 - Introduction to project management and enterprise',
+    members: ['Omar Alhomidi', 'Mohammad Saeid', 'Salman Alsaai', 'Abdulrahman Alajbar']
   },
-  'sec201': {
-    name: 'SEC201 - Network Security Analysis',
-    members: ['عمر الحميدي', 'خالد', 'مشعل', 'نذير']
+  'CMPS310': {
+    name: 'CMPS 310 - Software Engineering',
+    members: ['Sidi Mohammed', 'Jassim Almurrikhi', 'Omar Alhomidi']
   },
-  'proj301': {
-    name: 'PROJ301 - Project Management (AC condensate)',
-    members: ['عمر الحميدي', 'علي', 'عبدالرحمن']
+  'CMPS200': {
+    name: 'CMPS200 - Computer Ethics',
+    members: ['Omar Alhomidi', 'Jassim Almurrikhi', 'Saad Abdulkadder','Abdelrahman Abusleibeh']
   },
-  'pdf401': {
-    name: 'PDF401 - GroupProject-PDF',
-    members: ['عمر الحميدي', 'أحمد', 'سعود']
+  'CMPS303': {
+    name: 'CMPS303 - Data Structures and Algorithms',
+    members: ['Omar Alhomidi', 'Saad Abdulkadder', 'Abdulhadi']
   },
   'general': {
     name: 'General Workspace',
-    members: ['عمر الحميدي', 'عضو 1', 'عضو 2']
+    members: ['Omar Alhomidi']
   }
 };
 
