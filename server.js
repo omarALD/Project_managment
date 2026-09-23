@@ -1,80 +1,90 @@
 const express = require('express');
-const fs = require('fs');
+const mongoose = require('mongoose');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 8100;
-const DATA_FILE = path.join(__dirname, 'tasks.json');
+
+// قراءة رابط الاتصال من متغيرات البيئة
+const MONGO_URI = process.env.MONGO_URI;
+
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('Connected to MongoDB Atlas successfully!'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// تعريف نموذج البيانات (Schema)
+const TaskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  assignee: { type: String, default: 'غير محدد' },
+  deadline: { type: String, default: 'بدون تاريخ' },
+  status: { type: String, default: 'todo' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Task = mongoose.model('Task', TaskSchema);
 
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// دالة مساعدة لقراءة المهام من ملف JSON
-function readTasks() {
-    if (!fs.existsSync(DATA_FILE)) {
-        fs.writeFileSync(DATA_FILE, JSON.stringify([]));
-    }
-    const data = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(data || '[]');
-}
-
-// دالة مساعدة لحفظ المهام
-function saveTasks(tasks) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(tasks, null, 2));
-}
-
 // 1. جلب كافة المهام
-app.get('/api/tasks', (req, res) => {
-    res.json(readTasks());
+app.get('/api/tasks', async (req, res) => {
+  try {
+    const tasks = await Task.find();
+    const formatted = tasks.map(t => ({
+      id: t._id.toString(),
+      title: t.title,
+      assignee: t.assignee,
+      deadline: t.deadline,
+      status: t.status
+    }));
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 2. إضافة مهمة جديدة
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks', async (req, res) => {
+  try {
     const { title, assignee, deadline } = req.body;
     if (!title) return res.status(400).json({ error: 'عنوان المهمة مطلوب' });
 
-    const tasks = readTasks();
-    const newTask = {
-        id: Date.now().toString(),
-        title,
-        assignee: assignee || 'غير محدد',
-        deadline: deadline || 'بدون تاريخ',
-        status: 'todo', // todo, in-progress, done
-        createdAt: new Date().toISOString()
-    };
-
-    tasks.push(newTask);
-    saveTasks(tasks);
-    res.status(201).json(newTask);
+    const newTask = new Task({ title, assignee, deadline, status: 'todo' });
+    await newTask.save();
+    res.status(201).json({ id: newTask._id.toString(), ...newTask._doc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 3. تحديث حالة المهمة
-app.put('/api/tasks/:id', (req, res) => {
+app.put('/api/tasks/:id', async (req, res) => {
+  try {
     const { id } = req.params;
     const { status, title, assignee, deadline } = req.body;
-    let tasks = readTasks();
-    
-    const taskIndex = tasks.findIndex(t => t.id === id);
-    if (taskIndex === -1) return res.status(404).json({ error: 'المهمة غير موجودة' });
 
-    if (status) tasks[taskIndex].status = status;
-    if (title) tasks[taskIndex].title = title;
-    if (assignee) tasks[taskIndex].assignee = assignee;
-    if (deadline) tasks[taskIndex].deadline = deadline;
-
-    saveTasks(tasks);
-    res.json(tasks[taskIndex]);
+    const updatedTask = await Task.findByIdAndUpdate(
+      id,
+      { status, title, assignee, deadline },
+      { new: true }
+    );
+    res.json(updatedTask);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 4. حذف مهمة
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', async (req, res) => {
+  try {
     const { id } = req.params;
-    let tasks = readTasks();
-    tasks = tasks.filter(t => t.id !== id);
-    saveTasks(tasks);
+    await Task.findByIdAndDelete(id);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 سيرفر إدارة المهام يعمل على: http://localhost:${PORT}\n`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
