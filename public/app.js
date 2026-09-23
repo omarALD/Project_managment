@@ -40,7 +40,7 @@ const PROJECTS_CONFIG = {
   },
   'cmps310': {
     name: 'cmps 310 - Software Engineering',
-    members: ['Sidi Mohammed', 'Jassim Almurrikhi', 'Omar Alhomidi']
+    members: ['Sidi Mohammed', 'Jassim Almurrikhi', 'Omar Alhomidi', 'Jassim Alambari']
   },
   'cmps200': {
     name: 'cmps200 - Computer Ethics',
