@@ -61,6 +61,9 @@ const PROJECTS_CONFIG = {
    ------------------------------------------------------------ */
 const state = {
   tasks: [],
+  visible: [],            // المهام بعد تطبيق الفلتر
+  taskMap: new Map(),     // id -> task (للتحديث السريع للمؤقتات)
+  assigneeFilter: 'all',
   isLocalMode: false,
   calendarView: 'week',
   calendarAnchor: new Date(),
@@ -150,27 +153,51 @@ function escapeHTML(str) {
 /* ------------------------------------------------------------
    Project Context Setup
    ------------------------------------------------------------ */
-function setupProjectContext() {
-  const currentKey = state.currentProject;
-  
-  const projectInfo = PROJECTS_CONFIG[currentKey] || {
-    name: `المادة: ${currentKey.toUpperCase()}`,
+function getProjectInfo() {
+  return PROJECTS_CONFIG[state.currentProject] || {
+    name: `المادة: ${state.currentProject.toUpperCase()}`,
     members: ['عمر الحميدي', 'عضو عام 1', 'عضو عام 2']
   };
+}
 
-  // 1. تحديث اسم المادة في الهيدر
+function setupProjectContext() {
+  const projectInfo = getProjectInfo();
+
   const labelEl = document.getElementById('current-project-label');
-  if (labelEl) {
-    labelEl.textContent = projectInfo.name;
-  }
+  if (labelEl) labelEl.textContent = projectInfo.name;
 
-  // 2. تحديث قائمة الأعضاء لهذه المادة
   const assigneeSelect = document.getElementById('task-assignee');
   if (assigneeSelect) {
     assigneeSelect.innerHTML = projectInfo.members
-      .map(member => `<option value="${member}">👤 ${member}</option>`)
+      .map(m => `<option value="${escapeHTML(m)}">👤 ${escapeHTML(m)}</option>`)
       .join('');
   }
+
+  renderFilterBar();
+}
+
+/* ---------- Assignee Filter ---------- */
+function renderFilterBar() {
+  const el = $('#assignee-filter');
+  if (!el) return;
+
+  const options = ['all', ...getProjectInfo().members];
+  el.innerHTML =
+    `<span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mr-1">🔍 Filter</span>` +
+    options.map(m => {
+      const active = state.assigneeFilter === m;
+      const cls = active
+        ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/25'
+        : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border-slate-800';
+      return `<button type="button" data-assignee="${escapeHTML(m)}" class="px-3 py-1.5 rounded-full text-xs font-semibold border transition ${cls}">${m === 'all' ? 'All' : escapeHTML(m)}</button>`;
+    }).join('');
+}
+
+function applyFilter() {
+  state.visible = state.assigneeFilter === 'all'
+    ? state.tasks
+    : state.tasks.filter(t => t.assignee === state.assigneeFilter);
+  state.taskMap = new Map(state.visible.map(t => [t.id, t]));
 }
 
 /* ------------------------------------------------------------
@@ -350,36 +377,12 @@ function getDeadlineInfo(task) {
 /* ------------------------------------------------------------
    Kanban Rendering
    ------------------------------------------------------------ */
-function renderKanban() {
-  const cols = {
-    todo: $('#col-todo'),
-    'in-progress': $('#col-in-progress'),
-    done: $('#col-done')
-  };
+const kanbanCache = { todo: '', 'in-progress': '', done: '' };
 
-  Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
-
-  const counts = { todo: 0, 'in-progress': 0, done: 0 };
-
-  const priorityWeight = { critical: 0, high: 1, medium: 2, low: 3 };
-  const sorted = [...state.tasks].sort((a, b) => {
-    const pa = priorityWeight[a.priority] ?? 2;
-    const pb = priorityWeight[b.priority] ?? 2;
-    if (pa !== pb) return pa - pb;
-    return (a.deadline || '').localeCompare(b.deadline || '');
-  });
-
-  sorted.forEach(task => {
-    counts[task.status] = (counts[task.status] || 0) + 1;
-    const info = getDeadlineInfo(task);
-    const pr = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
-
-    const card = document.createElement('div');
-    card.className = `glass-panel p-4 rounded-2xl border ${
-      info.isOverdue ? 'border-rose-500/50 bg-rose-950/10' : 'border-slate-800'
-    } shadow-md space-y-3 hover:border-slate-700 transition duration-200`;
-
-    card.innerHTML = `
+function kanbanCardHTML(task, info) {
+  const pr = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
+  return `
+    <div class="glass-panel p-4 rounded-2xl border ${info.isOverdue ? 'border-rose-500/50 bg-rose-950/10' : 'border-slate-800'} shadow-md space-y-3 hover:border-slate-700 transition duration-200">
       <div class="flex justify-between items-start gap-2">
         <div class="flex items-start gap-2 flex-1 min-w-0">
           <span class="w-2 h-2 rounded-full ${pr.color} mt-1.5 flex-shrink-0" title="Priority: ${pr.label}"></span>
@@ -390,7 +393,7 @@ function renderKanban() {
 
       <div class="flex items-center justify-between gap-2">
         <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border ${info.class}">${info.label}</span>
-        <span class="text-xs font-mono font-medium text-slate-300">${info.timeText}</span>
+        <span data-timer-id="${task.id}" data-label="${info.label}" class="text-xs font-mono font-medium text-slate-300">${info.timeText}</span>
       </div>
 
       <div class="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
@@ -402,17 +405,39 @@ function renderKanban() {
         ${task.status !== 'in-progress' ? `<button data-action="status" data-id="${task.id}" data-status="in-progress" class="flex-1 bg-slate-900 hover:bg-slate-800 text-blue-400 py-1.5 rounded-lg border border-slate-800 transition text-center">Progress</button>` : ''}
         ${task.status !== 'done' ? `<button data-action="status" data-id="${task.id}" data-status="done" class="flex-1 bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-400 py-1.5 rounded-lg border border-emerald-800/50 transition font-semibold text-center">Done</button>` : ''}
       </div>
-    `;
+    </div>`;
+}
 
-    if (cols[task.status]) cols[task.status].appendChild(card);
+function renderKanban() {
+  const priorityWeight = { critical: 0, high: 1, medium: 2, low: 3 };
+  const sorted = [...state.visible].sort((a, b) => {
+    const pa = priorityWeight[a.priority] ?? 2;
+    const pb = priorityWeight[b.priority] ?? 2;
+    if (pa !== pb) return pa - pb;
+    return (a.deadline || '').localeCompare(b.deadline || '');
   });
 
-  const elTodo = $('#count-todo');
-  const elProg = $('#count-in-progress');
-  const elDone = $('#count-done');
-  if (elTodo) elTodo.textContent = counts.todo;
-  if (elProg) elProg.textContent = counts['in-progress'];
-  if (elDone) elDone.textContent = counts.done;
+  const groups = { todo: [], 'in-progress': [], done: [] };
+  sorted.forEach(t => groups[t.status]?.push(t));
+
+  Object.keys(groups).forEach(status => {
+    const col = $(`#col-${status}`);
+    const countEl = $(`#count-${status}`);
+    if (countEl) countEl.textContent = groups[status].length;
+    if (!col) return;
+
+    const infos = groups[status].map(getDeadlineInfo);
+
+    // مفتاح يمثّل الحالة "الثابتة" للعمود (بدون الثواني) — إذا لم يتغيّر لا نلمس الـ DOM
+    const key = groups[status]
+      .map((t, i) => [t.id, t.title, t.assignee, t.priority, t.deadline, t.status, infos[i].label].join('~'))
+      .join('|');
+
+    if (key === kanbanCache[status]) return;
+    kanbanCache[status] = key;
+
+    col.innerHTML = groups[status].map((t, i) => kanbanCardHTML(t, infos[i])).join('');
+  });
 }
 
 /* ------------------------------------------------------------
@@ -435,7 +460,7 @@ function taskColorClass(task) {
 function tasksOnDay(date) {
   const dayStart = startOfDay(date).getTime();
   const dayEnd = endOfDay(date).getTime();
-  return state.tasks.filter(t => {
+  return state.visible.filter(t => {
     if (!t.deadline) return false;
     const ts = new Date(t.deadline).getTime();
     return ts >= dayStart && ts <= dayEnd;
@@ -660,16 +685,24 @@ function renderDayView() {
 /* ------------------------------------------------------------
    Calendar — Dispatcher
    ------------------------------------------------------------ */
-function renderCalendar() {
-  if (state.calendarView === 'day')        renderDayView();
-  else if (state.calendarView === 'week')  renderWeekView();
-  else                                     renderMonthView();
+let calendarKey = '';
+
+function renderCalendar(force = false) {
+  const taskKey = state.visible
+    .map(t => `${t.id}:${t.deadline}:${t.status}:${t.title}:${t.assignee}:${getDeadlineInfo(t).isOverdue}`)
+    .join(',');
+  const key = `${state.calendarView}|${state.calendarAnchor.toDateString()}|${taskKey}`;
+
+  if (!force && key === calendarKey) return;
+  calendarKey = key;
+
+  if (state.calendarView === 'day')       renderDayView();
+  else if (state.calendarView === 'week') renderWeekView();
+  else                                    renderMonthView();
 }
 
-/* ------------------------------------------------------------
-   Master Renderer
-   ------------------------------------------------------------ */
 function renderAll() {
+  applyFilter();
   renderKanban();
   renderCalendar();
 }
@@ -779,6 +812,17 @@ function bindEvents() {
     });
   });
 
+  const filterBar = $('#assignee-filter');
+if (filterBar) {
+  filterBar.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-assignee]');
+    if (!btn || btn.dataset.assignee === state.assigneeFilter) return;
+    state.assigneeFilter = btn.dataset.assignee;
+    renderFilterBar();
+    renderAll();
+  });
+}
+
   const refreshBtn = $('#btn-refresh');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', async () => {
@@ -863,7 +907,18 @@ let tickerInterval = null;
 function startTicker() {
   if (tickerInterval) return;
   tickerInterval = setInterval(() => {
-    renderKanban();
+    if (document.hidden) return;
+    let needsRender = false;
+
+    document.querySelectorAll('[data-timer-id]').forEach(el => {
+      const task = state.taskMap.get(el.dataset.timerId);
+      if (!task) return;
+      const info = getDeadlineInfo(task);
+      if (el.dataset.label !== info.label) needsRender = true;   // تغيّرت الحالة (قريب/متأخر)
+      else if (el.textContent !== info.timeText) el.textContent = info.timeText;
+    });
+
+    if (needsRender) { renderKanban(); renderCalendar(); }
   }, 1000);
 }
 
@@ -884,9 +939,9 @@ async function init() {
   await fetchTasks();
   startTicker();
 
-  setInterval(() => fetchTasks(true), 15000);
+  setInterval(() => { if (!document.hidden) fetchTasks(true); }, 15000);
   setInterval(() => {
-    if (state.calendarView === 'day') renderCalendar();
+    if (!document.hidden && state.calendarView === 'day') renderCalendar(true); // لتحريك خط "الآن"
   }, 60000);
 }
 
