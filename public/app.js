@@ -61,9 +61,12 @@ const PROJECTS_CONFIG = {
    ------------------------------------------------------------ */
 const state = {
   tasks: [],
-  visible: [],            // المهام بعد تطبيق الفلتر
-  taskMap: new Map(),     // id -> task (للتحديث السريع للمؤقتات)
+  visible: [],
+  taskMap: new Map(),
   assigneeFilter: 'all',
+  priorityFilter: 'all',   // جديد
+  search: '',              // جديد
+  dragId: null,            // جديد
   isLocalMode: false,
   calendarView: 'week',
   calendarAnchor: new Date(),
@@ -174,6 +177,7 @@ function setupProjectContext() {
   }
 
   renderFilterBar();
+  renderPriorityBar();
 }
 
 /* ---------- Assignee Filter ---------- */
@@ -194,11 +198,38 @@ function renderFilterBar() {
 }
 
 function applyFilter() {
-  state.visible = state.assigneeFilter === 'all'
-    ? state.tasks
-    : state.tasks.filter(t => t.assignee === state.assigneeFilter);
+  const q = state.search.trim().toLowerCase();
+  state.visible = state.tasks.filter(t =>
+    (state.assigneeFilter === 'all' || t.assignee === state.assigneeFilter) &&
+    (state.priorityFilter === 'all' || t.priority === state.priorityFilter) &&
+    (!q || (t.title || '').toLowerCase().includes(q))
+  );
   state.taskMap = new Map(state.visible.map(t => [t.id, t]));
 }
+
+////////////////////
+
+
+
+
+
+const PRIORITY_FILTERS = [
+  ['all', 'All'], ['critical', '🔴 Critical'], ['high', '🟠 High'],
+  ['medium', '🟡 Medium'], ['low', '🟢 Low']
+];
+
+function renderPriorityBar() {
+  const el = $('#priority-filter');
+  if (!el) return;
+  el.innerHTML = PRIORITY_FILTERS.map(([val, label]) => {
+    const cls = state.priorityFilter === val
+      ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-600/25'
+      : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border-slate-800';
+    return `<button type="button" data-priority="${val}" class="px-3 py-1.5 rounded-full text-xs font-semibold border transition ${cls}">${label}</button>`;
+  }).join('');
+}
+
+////////////
 
 /* ------------------------------------------------------------
    Toast
@@ -382,14 +413,15 @@ const kanbanCache = { todo: '', 'in-progress': '', done: '' };
 function kanbanCardHTML(task, info) {
   const pr = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
   return `
-    <div class="glass-panel p-4 rounded-2xl border ${info.isOverdue ? 'border-rose-500/50 bg-rose-950/10' : 'border-slate-800'} shadow-md space-y-3 hover:border-slate-700 transition duration-200">
-      <div class="flex justify-between items-start gap-2">
+    <div draggable="true" data-card-id="${task.id}" class="cursor-grab active:cursor-grabbing glass-panel p-4 rounded-2xl border ${info.isOverdue ? 'border-rose-500/50 bg-rose-950/10' : 'border-slate-800'} shadow-md space-y-3 hover:border-slate-700 transition duration-200">      <div class="flex justify-between items-start gap-2">
         <div class="flex items-start gap-2 flex-1 min-w-0">
           <span class="w-2 h-2 rounded-full ${pr.color} mt-1.5 flex-shrink-0" title="Priority: ${pr.label}"></span>
           <h4 class="font-semibold text-sm text-slate-100 leading-snug break-words">${escapeHTML(task.title)}</h4>
         </div>
-        <button data-action="delete" data-id="${task.id}" title="Delete" class="text-slate-500 hover:text-rose-400 transition text-xs p-1 flex-shrink-0">✕</button>
-      </div>
+        <div class="flex items-center flex-shrink-0">
+          <button data-action="edit" data-id="${task.id}" title="Edit" class="text-slate-500 hover:text-indigo-400 transition text-xs p-1">✏️</button>
+          <button data-action="delete" data-id="${task.id}" title="Delete" class="text-slate-500 hover:text-rose-400 transition text-xs p-1">✕</button>
+        </div>
 
       <div class="flex items-center justify-between gap-2">
         <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border ${info.class}">${info.label}</span>
@@ -408,7 +440,11 @@ function kanbanCardHTML(task, info) {
     </div>`;
 }
 
+const kanbanCache = { todo: null, 'in-progress': null, done: null };
+
 function renderKanban() {
+  if (state.dragId) return; // لا تعيد الرسم أثناء السحب كي لا يُلغى
+
   const priorityWeight = { critical: 0, high: 1, medium: 2, low: 3 };
   const sorted = [...state.visible].sort((a, b) => {
     const pa = priorityWeight[a.priority] ?? 2;
@@ -427,8 +463,6 @@ function renderKanban() {
     if (!col) return;
 
     const infos = groups[status].map(getDeadlineInfo);
-
-    // مفتاح يمثّل الحالة "الثابتة" للعمود (بدون الثواني) — إذا لم يتغيّر لا نلمس الـ DOM
     const key = groups[status]
       .map((t, i) => [t.id, t.title, t.assignee, t.priority, t.deadline, t.status, infos[i].label].join('~'))
       .join('|');
@@ -436,7 +470,9 @@ function renderKanban() {
     if (key === kanbanCache[status]) return;
     kanbanCache[status] = key;
 
-    col.innerHTML = groups[status].map((t, i) => kanbanCardHTML(t, infos[i])).join('');
+    col.innerHTML = groups[status].length
+      ? groups[status].map((t, i) => kanbanCardHTML(t, infos[i])).join('')
+      : `<div class="text-center text-xs text-slate-600 italic py-10">No tasks</div>`;
   });
 }
 
@@ -535,10 +571,95 @@ function renderMonthView() {
   const container = $('#calendar-container');
   if (container) container.innerHTML = html;
 }
+//-------------------------------------
+
+/* ---------- Edit Modal ---------- */
+function openEditModal(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+
+  const members = [...getProjectInfo().members];
+  if (t.assignee && !members.includes(t.assignee)) members.push(t.assignee);
+
+  $('#edit-id').value = t.id;
+  $('#edit-title').value = t.title;
+  $('#edit-assignee').innerHTML = members
+    .map(m => `<option value="${escapeHTML(m)}">👤 ${escapeHTML(m)}</option>`).join('');
+  $('#edit-assignee').value = t.assignee;
+  $('#edit-priority').value = t.priority || 'medium';
+
+  const dl = t.deadline || '';
+  $('#edit-deadline').value = dl.length >= 16 ? dl.slice(0, 16) : (dl ? `${dl}T00:00` : '');
+
+  const modal = $('#edit-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  $('#edit-title').focus();
+}
+
+function closeEditModal() {
+  const modal = $('#edit-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+/* ---------- Drag & Drop ---------- */
+function clearDragStyles() {
+  $$('[data-drop-status]').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500/60'));
+}
+
+function bindDragDrop() {
+  // نجعل كل عمود (الحاوية الأب) منطقة إفلات
+  ['todo', 'in-progress', 'done'].forEach(s => {
+    const panel = $(`#col-${s}`)?.parentElement;
+    if (panel) panel.dataset.dropStatus = s;
+  });
+
+  const board = $('#col-todo')?.closest('section');
+  if (!board) return;
+
+  board.addEventListener('dragstart', e => {
+    const card = e.target.closest('[data-card-id]');
+    if (!card) return;
+    state.dragId = card.dataset.cardId;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', state.dragId);
+    requestAnimationFrame(() => card.classList.add('opacity-40'));
+  });
+
+  board.addEventListener('dragover', e => {
+    const col = e.target.closest('[data-drop-status]');
+    if (!col || !state.dragId) return;
+    e.preventDefault();
+    clearDragStyles();
+    col.classList.add('ring-2', 'ring-indigo-500/60');
+  });
+
+  board.addEventListener('drop', e => {
+    const col = e.target.closest('[data-drop-status]');
+    if (!col || !state.dragId) return;
+    e.preventDefault();
+    const id = state.dragId;
+    state.dragId = null;
+    clearDragStyles();
+    updateStatus(id, col.dataset.dropStatus);
+  });
+
+  board.addEventListener('dragend', () => {
+    state.dragId = null;
+    clearDragStyles();
+    renderKanban();
+  });
+}
+//-----------------------
 
 /* ------------------------------------------------------------
    Calendar — Week View
    ------------------------------------------------------------ */
+
+
+   
 function renderWeekView() {
   const anchor = state.calendarAnchor;
   const weekStart = startOfWeek(anchor);
@@ -739,26 +860,34 @@ async function createTask(payload) {
   }
 }
 
-async function updateStatus(id, status) {
-  if (state.isLocalMode) {
-    const all = loadLocalTasks().map(t => (t.id === id ? { ...t, status } : t));
-    saveLocalTasks(all);
-    state.tasks = state.tasks.map(t => (t.id === id ? { ...t, status } : t));
-    renderAll();
-    showToast(`Moved to ${status}`, 'info', 1500);
-    return;
-  }
+async function updateTask(id, changes) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return false;
+  const backup = { ...task };
+
+  Object.assign(task, changes);
+  renderAll();
 
   try {
-    await apiRequest(`/tasks/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status })
-    });
-    showToast(`Moved to ${status}`, 'success', 1500);
-    await fetchTasks(true);
+    if (state.isLocalMode) {
+      saveLocalTasks(loadLocalTasks().map(t => (t.id === id ? { ...t, ...changes } : t)));
+    } else {
+      await apiRequest(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(changes) });
+    }
+    return true;
   } catch (err) {
+    const cur = state.tasks.find(t => t.id === id);
+    if (cur) Object.assign(cur, backup);
+    renderAll();
     showToast(`Failed: ${err.message}`, 'error');
+    return false;
   }
+}
+
+async function updateStatus(id, status) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task || task.status === status) return;
+  if (await updateTask(id, { status })) showToast(`Moved to ${status}`, 'success', 1500);
 }
 
 async function deleteTask(id) {
@@ -821,6 +950,44 @@ if (filterBar) {
     renderFilterBar();
     renderAll();
   });
+
+    // Search (مع debounce بسيط)
+  let searchTimer;
+  $('#search-input')?.addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.search = e.target.value; renderAll(); }, 150);
+  });
+
+  // Priority filter
+  $('#priority-filter')?.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-priority]');
+    if (!btn || btn.dataset.priority === state.priorityFilter) return;
+    state.priorityFilter = btn.dataset.priority;
+    renderPriorityBar();
+    renderAll();
+  });
+
+  // Edit modal
+  $('#edit-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = $('#edit-id').value;
+    const title = $('#edit-title').value.trim();
+    if (!title) return;
+    closeEditModal();
+    const ok = await updateTask(id, {
+      title,
+      assignee: $('#edit-assignee').value,
+      priority: $('#edit-priority').value,
+      deadline: $('#edit-deadline').value
+    });
+    if (ok) showToast('Task updated', 'success');
+  });
+
+  $('#edit-modal')?.addEventListener('click', e => {
+    if (e.target.id === 'edit-modal' || e.target.closest('[data-close-modal]')) closeEditModal();
+  });
+
+  bindDragDrop();
 }
 
   const refreshBtn = $('#btn-refresh');
@@ -882,18 +1049,20 @@ if (filterBar) {
     const { action, id, status } = btn.dataset;
     if (action === 'delete') deleteTask(id);
     else if (action === 'status') updateStatus(id, status);
+    else if (action === 'edit') openEditModal(id);
   });
 
   document.addEventListener('keydown', e => {
     const tag = document.activeElement?.tagName;
     const isTyping = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
 
-    if (e.key === 'Escape') {
+        if (e.key === 'Escape') {
+      closeEditModal();
       document.activeElement?.blur();
       return;
     }
 
-    if (!isTyping) {
+    if (!isTyping && $('#edit-modal')?.classList.contains('hidden')) {
       if (e.key === 'ArrowLeft') shiftCalendar(-1);
       if (e.key === 'ArrowRight') shiftCalendar(1);
     }
