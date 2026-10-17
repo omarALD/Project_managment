@@ -440,8 +440,6 @@ function kanbanCardHTML(task, info) {
     </div>`;
 }
 
-const kanbanCache = { todo: null, 'in-progress': null, done: null };
-
 function renderKanban() {
   if (state.dragId) return; // لا تعيد الرسم أثناء السحب كي لا يُلغى
 
