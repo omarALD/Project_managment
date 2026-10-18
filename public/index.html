@@ -27,12 +27,13 @@
       <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">
         🚀 Team Task Manager
       </h1>
-      <p class="text-xs md:text-sm text-slate-400 mt-1">
-        Workspace: <span id="current-project-label" class="font-bold text-indigo-400">...</span>
+<!-- داخل <header>: أضف break-words للسطر الذي يحتوي Workspace -->
+      <p class="text-xs md:text-sm text-slate-400 mt-1 break-words">
+          Workspace: <span id="current-project-label" class="font-bold text-indigo-400">...</span>
       </p>
     </div>
-    <div class="flex items-center gap-3">
-      <span id="connection-status" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+<!-- الحاوية اليمنى في الهيدر (التي تحتوي connection-status و btn-refresh) -->
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">      <span id="connection-status" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
         <span class="w-2 h-2 rounded-full bg-slate-400"></span>
         Connecting...
       </span>
@@ -53,7 +54,7 @@
 
       <form id="task-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
 
-        <div class="lg:col-span-5">
+        <div class="sm:col-span-2 lg:col-span-5">
           <label class="block text-[11px] font-medium text-slate-400 mb-1">Task Name</label>
           <input
             type="text"
@@ -111,7 +112,24 @@
     </section>
 
     <!-- Kanban Board -->
-     <!-- Assignee Filter -->
+    <!-- Mobile Status Tabs (يظهر على الجوال فقط) -->
+<div class="block md:hidden -mb-6">
+  <div class="grid grid-cols-3 gap-2 glass-panel p-1.5 rounded-2xl">
+    <button type="button" data-tab="todo" class="status-tab active">
+      <span class="text-[11px] font-semibold leading-tight">⏳ To Do</span>
+      <span id="tab-count-todo" class="tab-count">0</span>
+    </button>
+    <button type="button" data-tab="in-progress" class="status-tab">
+      <span class="text-[11px] font-semibold leading-tight">🚀 In Progress</span>
+      <span id="tab-count-in-progress" class="tab-count">0</span>
+    </button>
+    <button type="button" data-tab="done" class="status-tab">
+      <span class="text-[11px] font-semibold leading-tight">✅ Done</span>
+      <span id="tab-count-done" class="tab-count">0</span>
+    </button>
+  </div>
+</div> 
+    <!-- Assignee Filter -->
 <!-- Filters: Search + Priority + Assignee -->
 <div class="space-y-3 -mb-4">
   <div class="flex flex-col md:flex-row gap-3 md:items-center">
