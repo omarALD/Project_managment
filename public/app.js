@@ -64,12 +64,13 @@ const state = {
   visible: [],
   taskMap: new Map(),
   assigneeFilter: 'all',
-  priorityFilter: 'all',   // جديد
-  search: '',              // جديد
-  dragId: null,            // جديد
+  priorityFilter: 'all',
+  search: '',
+  dragId: null,
   isLocalMode: false,
-  calendarView: 'week',
+  calendarView: window.matchMedia('(max-width: 767px)').matches ? 'day' : 'week', // الجوال: Day تلقائياً
   calendarAnchor: new Date(),
+  mobileTab: 'todo',   // جديد
   currentProject: detectProjectFromURL()
 };
 
@@ -466,6 +467,8 @@ function renderKanban() {
     const col = $(`#col-${status}`);
     const countEl = $(`#count-${status}`);
     if (countEl) countEl.textContent = groups[status].length;
+        const tabCountEl = $(`#tab-count-${status}`);
+    if (tabCountEl) tabCountEl.textContent = groups[status].length;
     if (!col) return;
 
     const infos = groups[status].map(getDeadlineInfo);
@@ -756,7 +759,7 @@ function renderDayView() {
   const showNowLine = isToday(anchor);
 
   const html = `
-    <div class="min-w-[600px]">
+        <div class="md:min-w-[600px]">
       ${tasks.length === 0
         ? `<div class="text-center py-6 mb-4 bg-slate-900/40 rounded-2xl border border-slate-800/60 text-slate-500 text-xs italic">
              No deadlines on this day
@@ -932,7 +935,27 @@ function shiftCalendar(direction) {
   state.calendarAnchor = d;
   renderCalendar();
 }
+/* ---------- Mobile Kanban Tabs ---------- */
+function setMobileTab(status) {
+  state.mobileTab = status;
+  ['todo', 'in-progress', 'done'].forEach(s => {
+    const panel = $(`#col-${s}`)?.parentElement;
+    if (!panel) return;
+    panel.classList.add('kanban-panel');                       // الـ CSS يخفيها على الجوال فقط
+    panel.classList.toggle('mobile-active', s === status);
+  });
+  $$('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === status));
+}
 
+/* ---------- Calendar view buttons ---------- */
+const CAL_BTN_ACTIVE = 'cal-view-btn px-3 py-1 rounded-lg bg-purple-600 text-white font-medium transition';
+const CAL_BTN_IDLE   = 'cal-view-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
+
+function syncCalViewButtons() {
+  $$('.cal-view-btn').forEach(b => {
+    b.className = b.dataset.calView === state.calendarView ? CAL_BTN_ACTIVE : CAL_BTN_IDLE;
+  });
+}
 /* ------------------------------------------------------------
    Event Wiring
    ------------------------------------------------------------ */
@@ -1026,15 +1049,16 @@ if (filterBar) {
       }
     });
   }
-
-  $$('.cal-view-btn').forEach(btn => {     btn.addEventListener('click', () => {       state.calendarView = btn.dataset.calView;       $$
-('.cal-view-btn').forEach(b => {
-        b.className = b === btn
-          ? 'cal-view-btn px-3 py-1 rounded-lg bg-purple-600 text-white font-medium transition'
-          : 'cal-view-btn px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
-      });
+  $$('.cal-view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.calendarView = btn.dataset.calView;
+      syncCalViewButtons();
       renderCalendar();
     });
+  });
+
+  $$('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => setMobileTab(btn.dataset.tab));
   });
 
   const prevBtn = $('#cal-prev');
@@ -1103,6 +1127,8 @@ function startTicker() {
 async function init() {
   bindEvents();
   setupProjectContext(); // يضبط الأعضاء واسم المادة في الهيدر
+    setMobileTab(state.mobileTab);
+  syncCalViewButtons();
 
   document.title = `${state.currentProject.toUpperCase()} — Team Task Manager`;
 

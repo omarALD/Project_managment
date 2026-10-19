@@ -225,3 +225,89 @@ kbd {
   opacity: 1;
   transform: translateY(0);
 }
+/* ═══════════════════════════════════════════
+   MOBILE — Status Tabs
+   ═══════════════════════════════════════════ */
+
+.status-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.status-tab.active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #fff;
+}
+.status-tab .tab-count { font-size: 12px; font-weight: 800; }
+
+/* ═══════════════════════════════════════════
+   MOBILE — أقل من md (768px). الديسكتوب لا يتأثر
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  body { overflow-x: hidden; }
+
+  /* Kanban: عمود واحد حسب التبويب المختار */
+  .kanban-panel:not(.mobile-active) { display: none !important; }
+
+  /* مساحات أصغر لكسب عرض الشاشة */
+  .glass-panel { padding: 1rem !important; }
+
+  /* منع تكبير iOS التلقائي عند التركيز على الحقول */
+  input, select, textarea { font-size: 16px !important; }
+  input[type="datetime-local"] {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Touch targets ≥ 44px */
+  button[data-action="edit"],
+  button[data-action="delete"] {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    font-size: 16px !important;
+  }
+  button[data-action="status"] { min-height: 44px; font-size: 13px !important; }
+
+  .quicktime-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+
+  .cal-view-btn,
+  #cal-prev, #cal-next, #cal-today,
+  #btn-refresh,
+  [data-assignee], [data-priority] { min-height: 44px; }
+  #cal-prev, #cal-next { min-width: 44px; }
+
+  /* التقويم */
+  #calendar-container {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .cal-event { max-width: 100%; }
+
+  /* Toast بعرض الشاشة */
+  #toast-container { left: 1rem; right: 1rem; }
+  .toast { min-width: 0; }
+
+  /* نافذة التعديل قابلة للتمرير */
+  #edit-form { max-height: 90vh; overflow-y: auto; }
+}
