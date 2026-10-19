@@ -1125,10 +1125,16 @@ function startTicker() {
    Bootstrap
    ------------------------------------------------------------ */
 async function init() {
-  bindEvents();
-  setupProjectContext(); // يضبط الأعضاء واسم المادة في الهيدر
+  setupProjectContext();   // أولاً: اسم المادة + الأعضاء + الفلاتر
+
+  try {
     setMobileTab(state.mobileTab);
-  syncCalViewButtons();
+    syncCalViewButtons();
+    bindEvents();
+  } catch (err) {
+    console.error('Init error:', err);
+    showToast('JS error: ' + err.message, 'error', 8000);
+  }
 
   document.title = `${state.currentProject.toUpperCase()} — Team Task Manager`;
 
@@ -1142,8 +1148,7 @@ async function init() {
 
   setInterval(() => { if (!document.hidden) fetchTasks(true); }, 15000);
   setInterval(() => {
-    if (!document.hidden && state.calendarView === 'day') renderCalendar(true); // لتحريك خط "الآن"
+    if (!document.hidden && state.calendarView === 'day') renderCalendar(true);
   }, 60000);
 }
-
 document.addEventListener('DOMContentLoaded', init);
