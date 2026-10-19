@@ -2,8 +2,12 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#131417">
+  <meta name="description" content="Team Task Manager — Kanban board and calendar for multi-project task tracking.">
   <title>Team Task Manager</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     // ===== الهوية اللونية: غيّر الألوان من هنا فقط =====
@@ -16,10 +20,10 @@
       theme: {
         extend: {
           colors: {
-            indigo: accent,   // كل ما كان indigo/purple/pink
-            purple: accent,   // صار لوناً واحداً
+            indigo: accent,
+            purple: accent,
             pink: accent,
-            slate: {          // رمادي فحمي محايد
+            slate: {
               50: '#f6f6f7', 100: '#ececee', 200: '#d4d5d9', 300: '#b4b6bd',
               400: '#8e9099', 500: '#6b6d77', 600: '#4a4c55', 700: '#35373e',
               800: '#27292f', 900: '#1b1c21', 950: '#131417'
@@ -29,65 +33,83 @@
       }
     };
   </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 selection:bg-indigo-500 selection:text-white">
 
+  <a href="#main" class="skip-link">Skip to main content</a>
+
   <!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"
+       role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript>
+    <div class="max-w-7xl mx-auto mb-6 rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-200">
+      JavaScript is disabled. This app requires JavaScript to run.
+    </div>
+  </noscript>
 
   <!-- Header -->
   <header class="max-w-7xl mx-auto mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5">
-    <div>
+    <div class="min-w-0">
       <h1 class="text-xl md:text-2xl font-bold text-slate-50 tracking-tight">Team Task Manager</h1>
       <p class="text-xs md:text-sm text-slate-400 mt-1 break-words">
         Workspace: <span id="current-project-label" class="font-semibold text-slate-200">...</span>
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-      <span id="connection-status" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+      <!-- ملاحظة: JS يستبدل className لهذا العنصر بالكامل — لا تضف كلاسات مخصّصة هنا -->
+      <span id="connection-status" role="status" aria-live="polite"
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
         <span class="w-2 h-2 rounded-full bg-slate-400"></span>
         Connecting...
       </span>
-      <button id="btn-refresh" class="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition border border-slate-800">
+      <button id="btn-refresh" type="button"
+              class="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition border border-slate-800">
         Refresh
       </button>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto space-y-10">
+  <main id="main" class="max-w-7xl mx-auto space-y-10">
 
     <!-- Add Task Form -->
-    <section class="glass-panel p-6 rounded-3xl">
-      <h2 class="section-label mb-4">New task</h2>
+    <section class="glass-panel p-6 rounded-3xl" aria-labelledby="new-task-heading">
+      <h2 id="new-task-heading" class="section-label mb-4">New task</h2>
 
       <form id="task-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
 
         <div class="sm:col-span-2 lg:col-span-5">
-          <label class="block text-[11px] font-medium text-slate-400 mb-1">Task Name</label>
+          <label for="task-title" class="block text-[11px] font-medium text-slate-400 mb-1">Task Name</label>
           <input
             type="text"
             id="task-title"
+            name="title"
             placeholder="e.g. Deploy API, Review PR..."
             required
             maxlength="200"
+            autocomplete="off"
             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
           >
         </div>
 
         <div class="lg:col-span-2">
-          <label class="block text-[11px] font-medium text-slate-400 mb-1">Assignee</label>
-          <select id="task-assignee" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+          <label for="task-assignee" class="block text-[11px] font-medium text-slate-400 mb-1">Assignee</label>
+          <select id="task-assignee" name="assignee"
+                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
             <option value="Omar Alhomidi">Omar Alhomidi</option>
           </select>
         </div>
 
         <div class="lg:col-span-2">
-          <label class="block text-[11px] font-medium text-slate-400 mb-1">Priority</label>
-          <select id="task-priority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+          <label for="task-priority" class="block text-[11px] font-medium text-slate-400 mb-1">Priority</label>
+          <select id="task-priority" name="priority"
+                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
             <option value="high">High</option>
@@ -97,23 +119,25 @@
 
         <div class="sm:col-span-2 lg:col-span-3">
           <div class="flex flex-wrap justify-between items-center gap-2 mb-1">
-            <label class="block text-[11px] font-medium text-slate-400">Deadline</label>
-            <div class="flex flex-wrap gap-1.5 md:gap-1">
-              <button type="button" data-quicktime="2" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">+2h</button>
-              <button type="button" data-quicktime="24" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">+1d</button>
-              <button type="button" data-quicktime="72" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">+3d</button>
-              <button type="button" data-quicktime="168" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">+1w</button>
+            <label for="task-deadline" class="block text-[11px] font-medium text-slate-400">Deadline</label>
+            <div class="flex flex-wrap gap-1.5 md:gap-1" role="group" aria-label="Quick deadline presets">
+              <button type="button" data-quicktime="2"   class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition" aria-label="Set deadline to 2 hours from now">+2h</button>
+              <button type="button" data-quicktime="24"  class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition" aria-label="Set deadline to 1 day from now">+1d</button>
+              <button type="button" data-quicktime="72"  class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition" aria-label="Set deadline to 3 days from now">+3d</button>
+              <button type="button" data-quicktime="168" class="quicktime-btn text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition" aria-label="Set deadline to 1 week from now">+1w</button>
             </div>
           </div>
           <input
             type="datetime-local"
             id="task-deadline"
+            name="deadline"
             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
           >
         </div>
 
         <div class="sm:col-span-2 lg:col-span-12 flex justify-end">
-          <button type="submit" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl py-2.5 px-6 text-sm transition active:scale-[0.98] flex items-center justify-center gap-1.5">
+          <button type="submit"
+                  class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl py-2.5 px-6 text-sm transition active:scale-[0.98] flex items-center justify-center gap-1.5">
             Create Task
           </button>
         </div>
@@ -121,9 +145,176 @@
     </section>
 
     <!-- Filters: Search + Priority + Assignee -->
-    <div class="space-y-3 -mb-4">
-      <div class="flex flex-col md:flex-row gap-3 md:items-center">
-        <div class="relative md:w-72">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <section aria-label="Filters" class="space-y-3">
+      <div class="flex flex-col md:flex-row md:flex-wrap gap-3 md:items-center">
+
+        <div class="relative w-full md:w-72">
+          <label for="search-input" class="sr-only">Search tasks</label>
+          <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
           <input id="search-input" type="search" placeholder="Search tasks..."
-            class="w-full bg-slate-950 border
+                 autocomplete="off"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- JS يعيد بناء innerHTML لهذين العنصرين -->
+        <div id="priority-filter" class="flex flex-wrap items-center gap-2"
+             role="group" aria-label="Filter by priority"></div>
+
+        <div id="assignee-filter" class="flex flex-wrap items-center gap-2"
+             role="group" aria-label="Filter by assignee"></div>
+      </div>
+    </section>
+
+    <!-- Kanban Board -->
+    <section aria-labelledby="kanban-heading" class="space-y-3">
+      <div class="flex items-end justify-between gap-3">
+        <h2 id="kanban-heading" class="section-label">Board</h2>
+        <p class="hidden sm:block text-[11px] text-slate-600">Drag cards between columns</p>
+      </div>
+
+      <!-- Mobile column switcher (يُخفى على الديسكتوب) -->
+      <div class="grid grid-cols-3 gap-2 md:hidden" role="group" aria-label="Switch kanban column">
+        <button type="button" data-tab="todo" class="status-tab active" aria-label="Show To Do tasks">
+          <span class="text-[10px] uppercase tracking-wide">To Do</span>
+          <span class="tab-count" id="tab-count-todo">0</span>
+        </button>
+        <button type="button" data-tab="in-progress" class="status-tab" aria-label="Show In Progress tasks">
+          <span class="text-[10px] uppercase tracking-wide">Progress</span>
+          <span class="tab-count" id="tab-count-in-progress">0</span>
+        </button>
+        <button type="button" data-tab="done" class="status-tab" aria-label="Show Done tasks">
+          <span class="text-[10px] uppercase tracking-wide">Done</span>
+          <span class="tab-count" id="tab-count-done">0</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- To Do -->
+        <div class="kanban-panel glass-panel rounded-2xl p-3 flex flex-col min-h-[180px]" data-drop-status="todo">
+          <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-slate-800/70">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">To Do</h3>
+            <span id="count-todo" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0</span>
+          </div>
+          <div id="col-todo" class="space-y-3 flex-1"></div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="kanban-panel glass-panel rounded-2xl p-3 flex flex-col min-h-[180px]" data-drop-status="in-progress">
+          <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-slate-800/70">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Progress</h3>
+            <span id="count-in-progress" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0</span>
+          </div>
+          <div id="col-in-progress" class="space-y-3 flex-1"></div>
+        </div>
+
+        <!-- Done -->
+        <div class="kanban-panel glass-panel rounded-2xl p-3 flex flex-col min-h-[180px]" data-drop-status="done">
+          <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-slate-800/70">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Done</h3>
+            <span id="count-done" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0</span>
+          </div>
+          <div id="col-done" class="space-y-3 flex-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calendar -->
+    <section aria-labelledby="cal-heading" class="space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h2 id="cal-heading" class="section-label">Calendar</h2>
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1">
+            <span id="cal-title" class="text-base font-semibold text-slate-100 truncate" aria-live="polite">—</span>
+            <span id="cal-range" class="text-xs text-slate-500"></span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-0.5 bg-slate-900 border border-slate-800 rounded-xl p-1">
+            <button id="cal-prev" type="button" aria-label="Previous period"
+                    class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">‹</button>
+            <button id="cal-today" type="button"
+                    class="px-3 h-8 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition">Today</button>
+            <button id="cal-next" type="button" aria-label="Next period"
+                    class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">›</button>
+          </div>
+
+          <!-- JS يعيد كتابة className لهذه الأزرار -->
+          <div class="flex items-center gap-0.5 bg-slate-900 border border-slate-800 rounded-xl p-1"
+               role="group" aria-label="Calendar view">
+            <button type="button" class="cal-view-btn" data-cal-view="day">Day</button>
+            <button type="button" class="cal-view-btn" data-cal-view="week">Week</button>
+            <button type="button" class="cal-view-btn" data-cal-view="month">Month</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="calendar-container" class="overflow-x-auto"></div>
+    </section>
+  </main>
+
+  <!-- Edit Task Modal (يبدأ مخفياً — JS يزيل hidden ويضيف flex) -->
+  <div id="edit-modal"
+       class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+       role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <div class="glass-panel w-full max-w-lg rounded-2xl p-5 sm:p-6 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <h2 id="edit-modal-title" class="section-label">Edit task</h2>
+        <button type="button" data-close-modal aria-label="Close dialog"
+                class="text-slate-500 hover:text-slate-200 transition text-sm leading-none p-2 -m-2 rounded-lg">✕</button>
+      </div>
+
+      <form id="edit-form" class="space-y-3">
+        <input type="hidden" id="edit-id">
+
+        <div>
+          <label for="edit-title" class="block text-[11px] font-medium text-slate-400 mb-1">Task name</label>
+          <input id="edit-title" type="text" required maxlength="200" autocomplete="off"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="edit-assignee" class="block text-[11px] font-medium text-slate-400 mb-1">Assignee</label>
+            <select id="edit-assignee"
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"></select>
+          </div>
+          <div>
+            <label for="edit-priority" class="block text-[11px] font-medium text-slate-400 mb-1">Priority</label>
+            <select id="edit-priority"
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="edit-deadline" class="block text-[11px] font-medium text-slate-400 mb-1">Deadline</label>
+          <input id="edit-deadline" type="datetime-local"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" data-close-modal
+                  class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:text-white transition">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition active:scale-[0.98]">
+            Save changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>
