@@ -1,39 +1,49 @@
 /* ============================================
-   Team Task Manager — Clean Dark Theme
+   Team Task Manager — Light Theme
    ============================================ */
 
 :root {
-  --bg: #131417;
-  --surface: #1b1c21;
-  --surface-2: #212328;
-  --surface-3: #292c33;
-  --border: #27292f;
-  --border-strong: #3a3d45;
-  --text: #ececee;
-  --text-dim: #9a9ca5;
-  --accent: 74, 134, 238;   /* rgb للون المميز */
+  --bg:            #fafbfc;
+  --surface:       #ffffff;
+  --surface-2:     #f7f8fa;
+  --surface-3:     #eef0f3;
+  --border:        #e2e4e8;
+  --border-strong: #c5c8cf;
+  --text:          #0f1115;
+  --text-dim:      #5a5f6b;
+  --accent:        59, 115, 217;
+
+  /* ألوان الحالات — للوضع الفاتح */
+  --ok-bg:   #dcfce7;  --ok-fg:   #166534;  --ok-br:   #86efac;
+  --warn-bg: #fef3c7;  --warn-fg: #92400e;  --warn-br: #fcd34d;
+  --bad-bg:  #ffe4e6;  --bad-fg:  #9f1239;  --bad-br:  #fda4af;
+  --info-bg: #eff6ff;  --info-fg: #1e40af;  --info-br: #bfdbfe;
 }
 
-html { color-scheme: dark; }
+/* ───────── Base ───────── */
+html { color-scheme: light; }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  background-color: var(--bg) !important;
+  color: var(--text);
+  min-height: 100vh;
 }
 
-input, select, textarea { color-scheme: dark; }
-::placeholder { color: #6b6d77; opacity: 1; }
-option { background-color: var(--surface-2); color: var(--text); }
+input, select, textarea { color-scheme: light; }
+::placeholder { color: #9ca0aa; opacity: 1; }
+option { background: #fff; color: var(--text); }
 
 button:not(:disabled) { cursor: pointer; }
 button:disabled, input:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
 
-/* ───────── Focus (a11y) ───────── */
+/* ───────── Focus ───────── */
 button:focus-visible,
 a:focus-visible,
 select:focus-visible,
+input:focus-visible,
 [tabindex]:focus-visible,
 .cal-event:focus-visible {
   outline: 2px solid rgba(var(--accent), .9);
@@ -43,116 +53,230 @@ select:focus-visible,
 
 /* ───────── Skip link ───────── */
 .skip-link {
-  position: fixed;
-  top: .5rem;
-  left: .5rem;
-  z-index: 100;
-  padding: .5rem .9rem;
-  border-radius: 8px;
-  background: rgb(var(--accent));
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  transform: translateY(-160%);
-  transition: transform .15s ease;
+  position: fixed; top: .5rem; left: .5rem; z-index: 100;
+  padding: .5rem .9rem; border-radius: 8px;
+  background: rgb(var(--accent)); color: #fff;
+  font-size: 13px; font-weight: 600;
+  transform: translateY(-160%); transition: transform .15s ease;
 }
-.skip-link:focus,
-.skip-link:focus-visible { transform: translateY(0); }
+.skip-link:focus, .skip-link:focus-visible { transform: translateY(0); }
 
-/* عنوان القسم */
+/* ───────── Section label ───────── */
 .section-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-dim);
 }
 
-/* ───────── Surfaces: صلبة بدل الزجاج ───────── */
+/* ───────── Surfaces ───────── */
 .glass-panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  box-shadow: 0 1px 3px rgba(15, 17, 21, .04);
 }
 
-/* كروت المهام داخل الأعمدة أفتح قليلاً عن العمود */
-[id^="col-"] .glass-panel { background: var(--surface-2); }
+/* كروت داخل الأعمدة */
+[id^="col-"] .glass-panel {
+  background: var(--surface-2);
+  border-color: var(--border) !important;
+  box-shadow: 0 1px 2px rgba(15, 17, 21, .05);
+}
+[id^="col-"] .glass-panel:not([class*="border-rose"]):hover {
+  background: var(--surface-3);
+  border-color: var(--border-strong) !important;
+}
 
-/* hover للكروت العادية */
-[id^="col-"] .glass-panel:not([class*="border-rose"]):hover { background: var(--surface-3); }
-
-/* كروت المتأخرة: لون وردي واضح (JS يضيف border-rose-500/50) */
+/* كروت المتأخرة */
 [id^="col-"] .glass-panel[class*="border-rose"] {
-  background: rgba(244, 63, 94, .07);
-  border-color: rgba(244, 63, 94, .45);
+  background: #fff5f5 !important;
+  border-color: var(--bad-br) !important;
 }
 [id^="col-"] .glass-panel[class*="border-rose"]:hover {
-  background: rgba(244, 63, 94, .12);
+  background: #ffe4e6 !important;
 }
 
-/* إزالة الظلال الملونة والوهج والنبض */
-[class*="shadow-"] { box-shadow: none !important; }
+/* ───────── إيقاف التأثيرات المزعجة ───────── */
 .animate-pulse, .animate-ping, .animate-glow { animation: none !important; }
 
-/* حواف أقل استدارة */
+/* ───────── Radii ───────── */
 .rounded-3xl, .rounded-2xl { border-radius: 12px !important; }
 .rounded-xl { border-radius: 8px !important; }
 
 /* ───────── Scrollbar ───────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #35373e; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #4a4c55; }
+::-webkit-scrollbar-track { background: var(--surface-2); }
+::-webkit-scrollbar-thumb { background: #c5c8cf; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca0aa; }
 
-/* ───────── Datetime picker (dark) ───────── */
+/* ───────── Datetime picker ───────── */
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(.8);
-  opacity: .7;
-  cursor: pointer;
-  transition: opacity .15s ease;
+  filter: none; opacity: .6; cursor: pointer; transition: opacity .15s ease;
 }
 input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-/* ───────── Connection status ─────────
-   JS يستبدل className بالكامل → نضبط فقط خصائص لا تتعارض مع ألوانه */
+/* ───────── Connection status ───────── */
 #connection-status {
   white-space: nowrap;
   transition: background-color .2s ease, color .2s ease, border-color .2s ease;
 }
 
 /* ───────── Drag & drop ───────── */
-[data-drop-status] { transition: box-shadow 0.15s ease; }
+[data-drop-status] { transition: box-shadow .15s ease; }
 
-/* ───────── Calendar ───────── */
-#calendar-container {
-  overflow-x: auto;
-  padding-bottom: 4px;
+/* ═══════════════════════════════════════════
+   Light-mode overrides لألوان يولّدها JS
+   (JS يولّد كلاسات مصممة للخلفيات الداكنة)
+   ═══════════════════════════════════════════ */
+
+/* Connection status: Live Sync */
+#connection-status[class*="bg-emerald-500"] {
+  background: var(--ok-bg) !important;
+  color: var(--ok-fg) !important;
+  border-color: var(--ok-br) !important;
+}
+#connection-status[class*="bg-emerald-500"] .bg-emerald-400 { background: #10b981 !important; }
+
+/* Connection status: Offline */
+#connection-status[class*="bg-amber-500"] {
+  background: var(--warn-bg) !important;
+  color: var(--warn-fg) !important;
+  border-color: var(--warn-br) !important;
+}
+#connection-status[class*="bg-amber-500"] .bg-amber-400 { background: #f59e0b !important; }
+
+/* Badge: ON TRACK / Completed */
+[class*="bg-emerald-500/10"][class*="text-emerald-400"],
+[class*="bg-emerald-500/10"][class*="text-emerald-300"] {
+  background: var(--ok-bg) !important;
+  color: var(--ok-fg) !important;
+  border-color: var(--ok-br) !important;
 }
 
+/* Badge: DUE SOON */
+[class*="bg-amber-500/20"][class*="text-amber-300"],
+[class*="bg-amber-500/20"][class*="text-amber-400"] {
+  background: var(--warn-bg) !important;
+  color: var(--warn-fg) !important;
+  border-color: var(--warn-br) !important;
+}
+
+/* Badge: OVERDUE */
+[class*="bg-rose-500/20"][class*="text-rose-400"],
+[class*="bg-rose-500/20"][class*="text-rose-300"] {
+  background: var(--bad-bg) !important;
+  color: var(--bad-fg) !important;
+  border-color: var(--bad-br) !important;
+}
+
+/* زر status: To Do */
+button[data-action="status"][data-status="todo"] {
+  background: var(--surface-3) !important;
+  color: #2a2e36 !important;
+  border-color: var(--border) !important;
+}
+button[data-action="status"][data-status="todo"]:hover {
+  background: var(--border) !important;
+}
+
+/* زر status: Progress */
+button[data-action="status"][data-status="in-progress"] {
+  background: var(--info-bg) !important;
+  color: var(--info-fg) !important;
+  border-color: var(--info-br) !important;
+}
+button[data-action="status"][data-status="in-progress"]:hover {
+  background: #dbeafe !important;
+}
+
+/* زر status: Done */
+button[data-action="status"][data-status="done"] {
+  background: var(--ok-bg) !important;
+  color: var(--ok-fg) !important;
+  border-color: var(--ok-br) !important;
+}
+button[data-action="status"][data-status="done"]:hover {
+  background: #bbf7d0 !important;
+}
+
+/* أزرار الفلاتر غير النشطة (assignee + priority) */
+[data-assignee]:not([class*="bg-indigo"]),
+[data-priority]:not([class*="bg-purple"]) {
+  background: var(--surface-2) !important;
+  color: var(--text-dim) !important;
+  border-color: var(--border) !important;
+}
+[data-assignee]:not([class*="bg-indigo"]):hover,
+[data-priority]:not([class*="bg-purple"]):hover {
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+}
+
+/* أزرار quicktime */
+.quicktime-btn {
+  background: var(--surface-3) !important;
+  color: var(--text-dim) !important;
+}
+.quicktime-btn:hover {
+  background: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* زر Refresh */
+#btn-refresh {
+  background: var(--surface-2) !important;
+  color: #2a2e36 !important;
+  border-color: var(--border) !important;
+}
+#btn-refresh:hover {
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+}
+
+/* أزرار التقويم (prev / today / next) */
+#cal-prev, #cal-next, #cal-today {
+  color: var(--text-dim) !important;
+}
+#cal-prev:hover, #cal-next:hover, #cal-today:hover {
+  color: var(--text) !important;
+  background: var(--surface-3) !important;
+}
+
+/* أزرار التقويم cal-view-btn — idle */
+.cal-view-btn:not([class*="bg-purple"]) {
+  color: var(--text-dim) !important;
+}
+.cal-view-btn:not([class*="bg-purple"]):hover {
+  color: var(--text) !important;
+  background: var(--surface-3) !important;
+}
+
+/* "No tasks" + "Drag cards" */
+.text-slate-600 { color: #9ca0aa !important; }
+
+/* ═══════════════════════════════════════════
+   Calendar
+   ═══════════════════════════════════════════ */
+#calendar-container { overflow-x: auto; padding-bottom: 4px; }
+
 .cal-cell {
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background .15s ease, border-color .15s ease;
   position: relative;
   min-height: 96px;
 }
-.cal-cell:hover { background: rgba(255, 255, 255, 0.03); }
+.cal-cell:hover { background: rgba(59, 115, 217, .04); }
 
 .cal-cell.today {
-  border-color: rgba(var(--accent), 0.6) !important;
-  background: rgba(var(--accent), 0.06);
+  border-color: rgba(var(--accent), .6) !important;
+  background: rgba(var(--accent), .06);
 }
 .cal-cell.today::after {
   content: 'TODAY';
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 9px;
-  font-weight: 700;
-  color: rgb(var(--accent));
-  letter-spacing: 0.5px;
+  position: absolute; top: 4px; right: 6px;
+  font-size: 9px; font-weight: 700;
+  color: rgb(var(--accent)); letter-spacing: .5px;
 }
-.cal-cell.other-month { opacity: 0.35; }
+.cal-cell.other-month { opacity: .4; }
 
+/* cal-event — override ألوان JS */
 .cal-event {
   display: block;
   font-size: 10px;
@@ -162,40 +286,51 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  transition: filter 0.15s ease;
+  transition: filter .15s ease;
   border-left: 3px solid;
 }
-.cal-event:hover { filter: brightness(1.2); }
-.cal-event:focus-visible { filter: brightness(1.2); }
+.cal-event:hover, .cal-event:focus-visible { filter: brightness(.95); }
+
+.cal-event[class*="text-rose-200"] {
+  background: var(--bad-bg) !important;
+  color: var(--bad-fg) !important;
+  border-left-color: #f43f5e !important;
+}
+.cal-event[class*="text-emerald-200"] {
+  background: var(--ok-bg) !important;
+  color: var(--ok-fg) !important;
+  border-left-color: #10b981 !important;
+}
+.cal-event[class*="text-indigo-200"] {
+  background: var(--info-bg) !important;
+  color: var(--info-fg) !important;
+  border-left-color: #3b82f6 !important;
+}
+.cal-event[class*="text-amber-200"] {
+  background: var(--warn-bg) !important;
+  color: var(--warn-fg) !important;
+  border-left-color: #f59e0b !important;
+}
 
 .cal-hour-slot {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border);
   min-height: 44px;
   position: relative;
 }
-.cal-hour-slot:hover { background: rgba(255, 255, 255, 0.02); }
+.cal-hour-slot:hover { background: rgba(59, 115, 217, .03); }
 
 .cal-now-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #ef4444;
-  z-index: 5;
-  pointer-events: none;
+  position: absolute; left: 0; right: 0;
+  height: 2px; background: #dc2626; z-index: 5; pointer-events: none;
 }
 .cal-now-line::before {
-  content: '';
-  position: absolute;
-  left: -4px;
-  top: -3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ef4444;
+  content: ''; position: absolute; left: -4px; top: -3px;
+  width: 8px; height: 8px; border-radius: 50%; background: #dc2626;
 }
 
-/* ───────── Toast ───────── */
+/* ═══════════════════════════════════════════
+   Toast
+   ═══════════════════════════════════════════ */
 #toast-container { pointer-events: none; }
 
 .toast {
@@ -205,49 +340,53 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
   font-size: 13px;
   font-weight: 500;
   border: 1px solid;
-  background: var(--surface-2);
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(15, 17, 21, .1);
   word-break: break-word;
-  animation: toastIn 0.25s ease-out;
+  animation: toastIn .25s ease-out;
 }
-.toast.success { border-color: rgba(16, 185, 129, 0.5); color: #6ee7b7; }
-.toast.error   { border-color: rgba(244, 63, 94, 0.5);  color: #fda4af; }
-.toast.info    { border-color: rgba(var(--accent), 0.5); color: #bcd5ff; }
+.toast.success { background: #f0fdf4; border-color: var(--ok-br);   color: var(--ok-fg);   }
+.toast.error   { background: #fff1f2; border-color: var(--bad-br);  color: var(--bad-fg);  }
+.toast.info    { background: var(--info-bg); border-color: var(--info-br); color: var(--info-fg); }
 
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(30px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-.toast.removing { animation: toastOut 0.25s ease-in forwards; }
+.toast.removing { animation: toastOut .25s ease-in forwards; }
 @keyframes toastOut { to { opacity: 0; transform: translateX(30px); } }
 
-/* ───────── Mobile Status Tabs ───────── */
+/* ═══════════════════════════════════════════
+   Mobile status tabs
+   ═══════════════════════════════════════════ */
 .status-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 56px;
-  padding: 6px 4px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  color: var(--text-dim);
-  background: var(--surface);
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px; min-height: 56px; padding: 6px 4px;
+  border-radius: 8px; border: 1px solid var(--border);
+  color: var(--text-dim); background: var(--surface);
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 .status-tab.active {
-  background: rgba(var(--accent), 0.15);
-  border-color: rgba(var(--accent), 0.5);
-  color: #fff;
+  background: rgba(var(--accent), .12);
+  border-color: rgba(var(--accent), .5);
+  color: rgb(var(--accent));
 }
 .status-tab .tab-count { font-size: 12px; font-weight: 700; }
 
-/* ───────── MOBILE (< 768px) ───────── */
+/* ═══════════════════════════════════════════
+   Modal backdrop
+   ═══════════════════════════════════════════ */
+#edit-modal { background: rgba(15, 17, 21, .45) !important; }
+
+/* ═══════════════════════════════════════════
+   MOBILE (< 768px)
+   ═══════════════════════════════════════════ */
 @media (max-width: 767px) {
   body { overflow-x: hidden; }
 
   .kanban-panel:not(.mobile-active) { display: none !important; }
-
   .glass-panel { padding: 1rem !important; }
 
   input, select, textarea { font-size: 16px !important; }
@@ -255,21 +394,15 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 
   button[data-action="edit"],
   button[data-action="delete"] {
-    min-width: 44px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 !important;
-    font-size: 16px !important;
+    min-width: 44px; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 !important; font-size: 16px !important;
   }
   button[data-action="status"] { min-height: 44px; font-size: 13px !important; }
 
   .quicktime-btn {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 12px !important;
-    font-size: 12px !important;
+    min-width: 44px; min-height: 44px;
+    padding: 0 12px !important; font-size: 12px !important;
   }
 
   .cal-view-btn,
@@ -291,12 +424,14 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
   #edit-form { max-height: 90vh; overflow-y: auto; }
 }
 
-/* ───────── Reduced motion ───────── */
+/* ═══════════════════════════════════════════
+   Reduced motion
+   ═══════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
 }

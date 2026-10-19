@@ -9,30 +9,41 @@
   <title>Team Task Manager</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    // ===== الهوية اللونية: غيّر الألوان من هنا فقط =====
-    const accent = {
-      50: '#eef5ff', 100: '#d9e8ff', 200: '#bcd5ff', 300: '#93bbff',
-      400: '#6aa0fa', 500: '#4a86ee', 600: '#3b73d9', 700: '#315fb5',
-      800: '#2a4d92', 900: '#243f73', 950: '#17264a'
-    };
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            indigo: accent,
-            purple: accent,
-            pink: accent,
-            slate: {
-              50: '#f6f6f7', 100: '#ececee', 200: '#d4d5d9', 300: '#b4b6bd',
-              400: '#8e9099', 500: '#6b6d77', 600: '#4a4c55', 700: '#35373e',
-              800: '#27292f', 900: '#1b1c21', 950: '#131417'
-            }
+<script>
+  // الهوية الزرقاء — تبقى كما هي
+  const accent = {
+    50: '#eef5ff', 100: '#d9e8ff', 200: '#bcd5ff', 300: '#93bbff',
+    400: '#6aa0fa', 500: '#4a86ee', 600: '#3b73d9', 700: '#315fb5',
+    800: '#2a4d92', 900: '#243f73', 950: '#17264a'
+  };
+
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          indigo: accent,
+          purple: accent,
+          pink: accent,
+          // slate مقلوب: 50 = أغمق نص، 950 = أفتح خلفية
+          // (نعكس الترتيب حتى تبقى كلاسات JS تعمل)
+          slate: {
+            50:  '#0f1115',   // ⬅️ نص أساسي غامق
+            100: '#1a1d23',
+            200: '#2a2e36',
+            300: '#414652',
+            400: '#5a5f6b',   // ⬅️ نص ثانوي
+            500: '#757a86',
+            600: '#9ca0aa',
+            700: '#c5c8cf',   // ⬅️ حدود
+            800: '#e2e4e8',   // ⬅️ حدود فاتحة
+            900: '#f0f1f4',   // ⬅️ خلفيات أزرار
+            950: '#fafbfc'    // ⬅️ خلفية body
           }
         }
       }
-    };
-  </script>
+    }
+  };
+</script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,8 +51,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="icon" type="image/png" href="logo.png">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 selection:bg-indigo-500 selection:text-white">
-
+<body class="bg-slate-950 text-slate-50 min-h-screen p-4 md:p-8 selection:bg-indigo-500 selection:text-white">
   <a href="#main" class="skip-link">Skip to main content</a>
 
   <!-- Toast Container -->
