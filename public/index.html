@@ -125,12 +125,14 @@
             </div>
           </div>
           <input
-            type="datetime-local"
-            id="task-deadline"
-            name="deadline"
-            lang="en-US"
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 focus:outline-none focus:border-indigo-500 transition font-mono"
-          >
+  type="text"
+  id="task-deadline"
+  name="deadline"
+  placeholder="Select deadline..."
+  onfocus="this.type='datetime-local'; try { this.showPicker() } catch(e) {}"
+  onblur="if(!this.value) this.type='text'"
+  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-mono"
+>
         </div>
 
         <div class="sm:col-span-2 lg:col-span-12 flex justify-end">
@@ -282,8 +284,15 @@
 
         <div>
           <label for="edit-deadline" class="block text-[11px] font-medium text-slate-400 mb-1">Deadline</label>
-          <input id="edit-deadline" type="datetime-local" lang="en-US"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 focus:outline-none focus:border-indigo-500 transition font-mono">
+          <input
+  type="text"
+  id="edit-deadline"
+  name="deadline"
+  placeholder="Select deadline..."
+  onfocus="this.type='datetime-local'; try { this.showPicker() } catch(e) {}"
+  onblur="if(!this.value) this.type='text'"
+  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-mono"
+>
         </div>
 
         <div class="flex justify-end gap-2 pt-1">

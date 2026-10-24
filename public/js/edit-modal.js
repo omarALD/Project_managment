@@ -21,8 +21,18 @@ export function openEditModal(id) {
   $('#edit-assignee').value = t.assignee;
   $('#edit-priority').value = t.priority || 'medium';
 
+  // ضبط نوع وقيمة حقل التاريخ ديناميكياً
   const dl = t.deadline || '';
-  $('#edit-deadline').value = dl.length >= 16 ? dl.slice(0, 16) : (dl ? `${dl}T00:00` : '');
+  const editDlEl = $('#edit-deadline');
+  if (editDlEl) {
+    if (dl) {
+      editDlEl.type = 'datetime-local';
+      editDlEl.value = dl.length >= 16 ? dl.slice(0, 16) : `${dl}T00:00`;
+    } else {
+      editDlEl.type = 'text';
+      editDlEl.value = '';
+    }
+  }
 
   const modal = $('#edit-modal');
   modal.classList.remove('hidden');

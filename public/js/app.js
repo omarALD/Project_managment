@@ -28,7 +28,10 @@ function bindEvents() {
       const d = new Date();
       d.setHours(d.getHours() + parseInt(btn.dataset.quicktime, 10));
       const el = $('#task-deadline');
-      if (el) el.value = toLocalISO(d);
+      
+      if (el)
+        {el.type = 'datetime-local'; // 👈 أضف هذا السطر هنا
+         el.value = toLocalISO(d);}
     });
   });
 
@@ -136,7 +139,9 @@ async function init() {
   const defaultDeadline = new Date();
   defaultDeadline.setHours(defaultDeadline.getHours() + 24);
   const deadlineEl = $('#task-deadline');
-  if (deadlineEl) deadlineEl.value = toLocalISO(defaultDeadline);
+  if (deadlineEl) {
+    deadlineEl.value = '';
+      deadlineEl.type = 'text';}
 
   await fetchTasks();
   startTicker();
