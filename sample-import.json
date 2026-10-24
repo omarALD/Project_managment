@@ -1,0 +1,19 @@
+[
+  {
+    "title": "Set up MongoDB Atlas connection",
+    "assignee": "Omar Alhomidi",
+    "priority": "high",
+    "status": "todo",
+    "deadline": "2026-10-30T18:00"
+  },
+  {
+    "title": "Write Milestone 2 Report Draft",
+    "assignee": "Jassim Almurrikhi",
+    "priority": "critical",
+    "status": "in-progress",
+    "deadline": "2026-11-01T23:59"
+  },
+  {
+    "title": "Review Data Flow Diagrams"
+  }
+]

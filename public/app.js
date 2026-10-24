@@ -840,32 +840,30 @@ function renderAll() {
 /* ------------------------------------------------------------
    Task Actions
    ------------------------------------------------------------ */
-async function createTask(payload) {
+async function createTask(payload, { silent = false } = {}) {
   const fullPayload = { ...payload, project: state.currentProject };
 
   if (state.isLocalMode) {
-    const task = {
-      id: uid(),
-      ...fullPayload,
-      createdAt: new Date().toISOString()
-    };
-    const all = loadLocalTasks();
-    saveLocalTasks([task, ...all]);
+    const task = { id: uid(), ...fullPayload, createdAt: new Date().toISOString() };
+    saveLocalTasks([task, ...loadLocalTasks()]);
     state.tasks = [task, ...state.tasks];
-    renderAll();
-    showToast('Task created', 'success');
-    return;
+    if (!silent) {
+      renderAll();
+      showToast('Task created', 'success');
+    }
+    return true;
   }
 
   try {
-    await apiRequest('/tasks', {
-      method: 'POST',
-      body: JSON.stringify(fullPayload)
-    });
-    showToast('Task created', 'success');
-    await fetchTasks(true);
+    await apiRequest('/tasks', { method: 'POST', body: JSON.stringify(fullPayload) });
+    if (!silent) {
+      showToast('Task created', 'success');
+      await fetchTasks(true);
+    }
+    return true;
   } catch (err) {
     showToast(`Failed: ${err.message}`, 'error');
+    return false;
   }
 }
 
@@ -1120,6 +1118,163 @@ function startTicker() {
     if (needsRender) { renderKanban(); renderCalendar(); }
   }, 1000);
 }
+/* ------------------------------------------------------------
+   Bulk Import
+   ------------------------------------------------------------ */
+const BULK_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+const BULK_STATUSES  = ['todo', 'in-progress', 'done'];
+
+// Returns { mode: 'empty' | 'json' | 'text' | 'invalid', items: [] }
+function parseBulkInput(raw) {
+  let text = (raw || '').trim();
+  if (!text) return { mode: 'empty', items: [] };
+
+  // LLMs often wrap output in ```json fences — strip them
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object') {
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      return { mode: 'json', items: arr.filter(i => i && typeof i === 'object') };
+    }
+    // numbers / strings / null → treat as plain text below
+  } catch {
+    // Looks like JSON but broken → invalid; otherwise it's plain text
+    if (/^[\[{]/.test(text)) return { mode: 'invalid', items: [] };
+  }
+
+  const items = text
+    .split('\n')
+    .map(l => l.trim().replace(/^(?:[-*•]|\d+[.)])\s+/, '')) // strip "- ", "1. " bullets
+    .filter(Boolean)
+    .map(title => ({ title }));
+  return { mode: 'text', items };
+}
+
+function normalizeBulkItem(item, members) {
+  const title = String(item.title || '').trim();
+  if (!title) return null;
+
+  const wanted = String(item.assignee || '').trim().toLowerCase();
+  const assignee = members.find(m => m.toLowerCase() === wanted) || members[0];
+
+  const priority = BULK_PRIORITIES.includes(item.priority) ? item.priority : 'medium';
+  const status   = BULK_STATUSES.includes(item.status) ? item.status : 'todo';
+
+  let deadline = typeof item.deadline === 'string' ? item.deadline.trim() : '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(deadline)) deadline += 'T23:59'; // date only → end of day
+  if (!deadline || isNaN(new Date(deadline).getTime())) {
+    deadline = toLocalISO(new Date(Date.now() + 24 * 3600000));
+  }
+
+  return { title, assignee, priority, status, deadline };
+}
+
+async function importBulkTasks(inputText) {
+  const { items } = parseBulkInput(inputText);
+  const members = getProjectInfo().members;
+  const payloads = items.map(i => normalizeBulkItem(i, members)).filter(Boolean);
+
+  if (!payloads.length) {
+    showToast('No valid tasks found (each needs a title)', 'error');
+    return false;
+  }
+
+  let added = 0;
+  for (const p of payloads) {            // sequential keeps the original order
+    if (await createTask(p, { silent: true })) added++;
+  }
+
+  if (state.isLocalMode) renderAll();
+  else await fetchTasks(true);           // one refresh → renderAll()
+
+  const skipped = items.length - payloads.length;
+  if (added) {
+    showToast(`Successfully added ${added} tasks!${skipped ? ` (${skipped} skipped: no title)` : ''}`, 'success');
+  }
+  return added > 0;
+}
+
+/* ---------- Bulk modal UI ---------- */
+function openBulkModal() {
+  const modal = $('#bulk-import-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  updateBulkBadge();
+  $('#bulk-input').focus();
+}
+
+function closeBulkModal() {
+  const modal = $('#bulk-import-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  $('#bulk-input').value = '';
+  updateBulkBadge();
+}
+
+function updateBulkBadge() {
+  const badge = $('#bulk-badge');
+  const submit = $('#bulk-submit');
+  if (!badge || !submit) return;
+
+  const { mode, items } = parseBulkInput($('#bulk-input').value);
+  const labels = {
+    empty:   'Waiting for input…',
+    json:    `JSON (${items.length} task${items.length === 1 ? '' : 's'} detected)`,
+    text:    `Plain Text (${items.length} line${items.length === 1 ? '' : 's'})`,
+    invalid: 'Invalid Syntax'
+  };
+  badge.dataset.state = mode;
+  badge.textContent = labels[mode];
+  submit.disabled = mode === 'empty' || mode === 'invalid' || items.length === 0;
+}
+
+function bindBulkImport() {
+  const input = $('#bulk-input');
+  if (!input) return;
+
+  $('#btn-bulk')?.addEventListener('click', openBulkModal);
+  input.addEventListener('input', updateBulkBadge);
+
+  $$('[data-bulk-close]').forEach(b => b.addEventListener('click', closeBulkModal));
+  $('#bulk-import-modal').addEventListener('click', e => {
+    if (e.target.id === 'bulk-import-modal') closeBulkModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('#bulk-import-modal').classList.contains('hidden')) closeBulkModal();
+  });
+
+  $('#bulk-sample-json').addEventListener('click', () => {
+    const m = getProjectInfo().members;
+    const inHours = h => toLocalISO(new Date(Date.now() + h * 3600000));
+    input.value = JSON.stringify([
+      { title: 'Set up MongoDB Atlas connection', assignee: m[0], priority: 'high',     status: 'todo',        deadline: inHours(48) },
+      { title: 'Write Milestone 2 Report Draft',  assignee: m[1] || m[0], priority: 'critical', status: 'in-progress', deadline: inHours(72) },
+      { title: 'Review Data Flow Diagrams' }
+    ], null, 2);
+    updateBulkBadge();
+  });
+
+  $('#bulk-sample-text').addEventListener('click', () => {
+    input.value = [
+      'Design database schema',
+      'Build login page prototype',
+      'Write test cases for API',
+      'Prepare final presentation slides'
+    ].join('\n');
+    updateBulkBadge();
+  });
+
+  $('#bulk-submit').addEventListener('click', async () => {
+    const btn = $('#bulk-submit');
+    btn.disabled = true;
+    const ok = await importBulkTasks(input.value);
+    if (ok) closeBulkModal();
+    else updateBulkBadge();
+  });
+}
 
 /* ------------------------------------------------------------
    Bootstrap
@@ -1131,6 +1286,7 @@ async function init() {
     setMobileTab(state.mobileTab);
     syncCalViewButtons();
     bindEvents();
+    bindBulkImport();
   } catch (err) {
     console.error('Init error:', err);
     showToast('JS error: ' + err.message, 'error', 8000);

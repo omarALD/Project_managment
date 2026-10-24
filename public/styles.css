@@ -435,3 +435,13 @@ button[data-action="status"][data-status="done"]:hover {
     scroll-behavior: auto !important;
   }
 }
+/* Bulk import */
+#bulk-import-modal { background: rgba(15, 17, 21, .45) !important; }
+.bulk-badge { background: var(--surface-3); color: var(--text-dim); border-color: var(--border); }
+.bulk-badge[data-state="json"]    { background: var(--ok-bg);   color: var(--ok-fg);   border-color: var(--ok-br); }
+.bulk-badge[data-state="text"]    { background: var(--info-bg); color: var(--info-fg); border-color: var(--info-br); }
+.bulk-badge[data-state="invalid"] { background: var(--bad-bg);  color: var(--bad-fg);  border-color: var(--bad-br); }
+
+@media (max-width: 767px) {
+  #btn-bulk { min-height: 44px; }
+}
