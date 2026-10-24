@@ -43,6 +43,15 @@ input, select, textarea {
   opacity: 1;
 }
 
+/* ضبط مدخلات التاريخ والوقت للهواتف */
+input[type="datetime-local"] {
+  direction: ltr;
+  text-align: left;
+}
+input[type="datetime-local"]::-webkit-datetime-edit {
+  color: var(--text);
+}
+
 option {
   background-color: #ffffff !important;
   color: #0f1115 !important;

@@ -9,38 +9,38 @@
   <title>Team Task Manager</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-<script>
-  const accent = {
-    50: '#eef5ff', 100: '#d9e8ff', 200: '#bcd5ff', 300: '#93bbff',
-    400: '#6aa0fa', 500: '#4a86ee', 600: '#3b73d9', 700: '#315fb5',
-    800: '#2a4d92', 900: '#243f73', 950: '#17264a'
-  };
+  <script>
+    const accent = {
+      50: '#eef5ff', 100: '#d9e8ff', 200: '#bcd5ff', 300: '#93bbff',
+      400: '#6aa0fa', 500: '#4a86ee', 600: '#3b73d9', 700: '#315fb5',
+      800: '#2a4d92', 900: '#243f73', 950: '#17264a'
+    };
 
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          indigo: accent,
-          purple: accent,
-          pink: accent,
-          slate: {
-            50:  '#0f1115',   // نص أساسي غامق
-            100: '#1a1d23',
-            200: '#2a2e36',
-            300: '#414652',
-            400: '#5a5f6b',   // نص ثانوي
-            500: '#757a86',
-            600: '#9ca0aa',
-            700: '#c5c8cf',   // حدود
-            800: '#e2e4e8',   // حدود فاتحة
-            900: '#f0f1f4',   // خلفيات أزرار
-            950: '#fafbfc'    // خلفية body
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            indigo: accent,
+            purple: accent,
+            pink: accent,
+            slate: {
+              50:  '#0f1115',
+              100: '#1a1d23',
+              200: '#2a2e36',
+              300: '#414652',
+              400: '#5a5f6b',
+              500: '#757a86',
+              600: '#9ca0aa',
+              700: '#c5c8cf',
+              800: '#e2e4e8',
+              900: '#f0f1f4',
+              950: '#fafbfc'
+            }
           }
         }
       }
-    }
-  };
-</script>
+    };
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,19 +62,13 @@
         Workspace: <span id="current-project-label" class="font-semibold text-slate-50">...</span>
       </p>
     </div>
-    <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-      <span id="connection-status" role="status" aria-live="polite"
-            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
-        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-        Connecting...
-      </span>
-      <button id="btn-refresh" type="button"
-              class="bg-slate-900 hover:bg-slate-800 text-slate-50 px-3.5 py-2 rounded-xl text-xs font-semibold transition border border-slate-800">
-        Refresh
-      </button>
+    <div class="flex items-center gap-2 sm:gap-3">
       <button id="btn-bulk" type="button"
-        class="bg-slate-900 hover:bg-slate-800 text-slate-50 px-3.5 py-2 rounded-full text-xs font-semibold transition border border-indigo-500">
-        ⚡ Bulk Import
+        class="bg-slate-900 hover:bg-slate-800 text-slate-50 px-4 py-2 rounded-xl text-xs font-semibold transition border border-slate-700 shadow-sm flex items-center gap-2">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        <span>Import Tasks</span>
       </button>
     </div>
   </header>
@@ -93,7 +87,7 @@
             type="text"
             id="task-title"
             name="title"
-            placeholder="e.g. Deploy API, Review PR..."
+            placeholder="Add a new task"
             required
             maxlength="200"
             autocomplete="off"
@@ -134,7 +128,8 @@
             type="datetime-local"
             id="task-deadline"
             name="deadline"
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 focus:outline-none focus:border-indigo-500 transition"
+            lang="en-US"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 focus:outline-none focus:border-indigo-500 transition font-mono"
           >
         </div>
 
@@ -168,14 +163,14 @@
       </div>
     </section>
 
-<!-- Kanban Board -->
+    <!-- Kanban Board -->
     <section aria-labelledby="kanban-heading" class="space-y-3">
       <div class="flex items-end justify-between gap-3">
         <h2 id="kanban-heading" class="section-label">Board</h2>
         <p class="hidden sm:block text-[11px] text-slate-500">Drag cards between columns</p>
       </div>
 
-      <!-- Mobile column switcher (شريط أزرار التنقل للجوال فقط) -->
+      <!-- Mobile column switcher -->
       <div class="grid grid-cols-3 gap-2 md:hidden" role="group" aria-label="Switch kanban column">
         <button type="button" data-tab="todo" class="status-tab active" aria-label="Show To Do tasks">
           <span class="text-[10px] uppercase tracking-wide">To Do</span>
@@ -190,37 +185,6 @@
           <span class="tab-count" id="tab-count-done">0</span>
         </button>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-        <!-- To Do -->
-        <div class="kanban-panel glass-panel rounded-2xl p-3 flex flex-col min-h-[180px]" data-drop-status="todo">
-          <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-slate-800/70">
-            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">To Do</h3>
-            <span id="count-todo" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-50">0</span>
-          </div>
-          <div id="col-todo" class="space-y-3 flex-1"></div>
-        </div>
-
-        <!-- In Progress -->
-        <div class="kanban-panel glass-panel rounded-2xl p-3 flex flex-col min-h-[180px]" data-drop-status="in-progress">
-          <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-slate-800/70">
-            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Progress</h3>
-            <span id="count-in-progress" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-50">0</span>
-          </div>
-          <div id="col-in-progress" class="space-y-3 flex-1"></div>
-        </div>
-
-        <!-- Done -->
-        <div class="kanban-panel glass-panel rounded-2xl p-3 flex flex-col min-h-[180px]" data-drop-status="done">
-          <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-slate-800/70">
-            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Done</h3>
-            <span id="count-done" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-50">0</span>
-          </div>
-          <div id="col-done" class="space-y-3 flex-1"></div>
-        </div>
-      </div>
-    </section>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
@@ -318,8 +282,8 @@
 
         <div>
           <label for="edit-deadline" class="block text-[11px] font-medium text-slate-400 mb-1">Deadline</label>
-          <input id="edit-deadline" type="datetime-local"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 focus:outline-none focus:border-indigo-500 transition">
+          <input id="edit-deadline" type="datetime-local" lang="en-US"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-50 focus:outline-none focus:border-indigo-500 transition font-mono">
         </div>
 
         <div class="flex justify-end gap-2 pt-1">
@@ -339,8 +303,8 @@
     <div class="glass-panel w-full max-w-2xl rounded-2xl p-5 sm:p-6 space-y-4">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <h2 id="bulk-modal-title" class="section-label">⚡ Developer Bulk Import</h2>
-          <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Paste JSON or plain text lines</p>
+          <h2 id="bulk-modal-title" class="section-label">Batch Task Import</h2>
+          <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Paste JSON array or line-by-line task titles</p>
         </div>
         <button type="button" data-bulk-close class="text-slate-400 hover:text-slate-50 transition text-sm leading-none p-2 -m-2 rounded-lg">✕</button>
       </div>
@@ -359,15 +323,15 @@
 
       <div class="flex justify-end gap-2">
         <button type="button" data-bulk-close class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-50 bg-slate-900 border border-slate-800 hover:bg-slate-800 transition">
-          إلغاء / Cancel
+          Cancel
         </button>
         <button type="button" id="bulk-submit" disabled class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition active:scale-[0.98]">
-          إضافة المهام / Import Tasks
+          Import Tasks
         </button>
       </div>
     </div>
   </div>
 
-<script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>
