@@ -32,9 +32,26 @@ body {
   min-height: 100vh;
 }
 
-input, select, textarea { color-scheme: light; }
-::placeholder { color: #9ca0aa; opacity: 1; }
-option { background: #fff; color: var(--text); }
+/* ضبط ألوان القوائم والمدخلات للثيم الفاتح */
+input, select, textarea {
+  color: var(--text) !important;
+  background-color: var(--surface) !important;
+}
+
+::placeholder {
+  color: #757a86 !important;
+  opacity: 1;
+}
+
+option {
+  background-color: #ffffff !important;
+  color: #0f1115 !important;
+}
+
+/* إصلاح العناوين والنصوص داخل الكروت المضمنة ديناميكياً */
+[id^="col-"] h4 {
+  color: #0f1115 !important;
+}
 
 button:not(:disabled) { cursor: pointer; }
 button:disabled, input:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
