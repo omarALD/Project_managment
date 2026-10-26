@@ -22,4 +22,4 @@ jobs:
           fi
 
           echo "Sending keep-alive ping to Render..."
-          curl -s -f https://project-managment-0k4m.onrender.com > /dev/null
+          curl -s -f https://project-managment-zucj.onrender.com > /dev/null
