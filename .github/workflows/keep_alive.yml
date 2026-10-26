@@ -1,0 +1,25 @@
+name: Temporary Render Keep-Alive
+
+on:
+  schedule:
+    # يعمل كل 12 دقيقة تلقائياً
+    - cron: '*/12 * * * *'
+  workflow_dispatch: # يتيح لك تشغيله يدوياً للاختبار
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Expiration and Send Ping
+        run: |
+          # يتوقف تلقائياً بعد 7 أيام من اليوم (بتاريخ 2 نوفمبر 2026)
+          EXPIRATION_DATE="2026-11-02"
+          CURRENT_DATE=$(date +%Y-%m-%d)
+
+          if [ "$CURRENT_DATE" \> "$EXPIRATION_DATE" ]; then
+            echo "The 7-day period has expired. Stopping keep-alive execution."
+            exit 0
+          fi
+
+          echo "Sending keep-alive ping to Render..."
+          curl -s -f https://project-managment-0k4m.onrender.com > /dev/null
