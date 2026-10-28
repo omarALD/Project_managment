@@ -2,9 +2,9 @@ name: Temporary Render Keep-Alive
 
 on:
   schedule:
-    # يعمل كل 12 دقيقة تلقائياً
-    - cron: '*/12 * * * *'
-  workflow_dispatch: # يتيح لك تشغيله يدوياً للاختبار
+    # تقليل الفترة إلى كل 5 دقائق لضمان عدم تجاوز نافذة الـ 15 دقيقة عند تأخر GitHub
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -12,14 +12,14 @@ jobs:
     steps:
       - name: Check Expiration and Send Ping
         run: |
-          # يتوقف تلقائياً بعد 7 أيام من اليوم (بتاريخ 2 نوفمبر 2026)
           EXPIRATION_DATE="2026-11-02"
           CURRENT_DATE=$(date +%Y-%m-%d)
 
-          if [ "$CURRENT_DATE" \> "$EXPIRATION_DATE" ]; then
-            echo "The 7-day period has expired. Stopping keep-alive execution."
+          if [[ "$CURRENT_DATE" > "$EXPIRATION_DATE" ]]; then
+            echo "The temporary period has expired. Stopping keep-alive execution."
             exit 0
           fi
 
           echo "Sending keep-alive ping to Render..."
-          curl -s -f https://project-managment-zucj.onrender.com > /dev/null
+          # إرسال الطلب مع إضافة Max-time وتتبع الاستجابة
+          curl -sS --max-time 60 https://project-managment-zucj.onrender.com/ > /dev/null || echo "Ping failed or timed out"
