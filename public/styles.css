@@ -471,3 +471,29 @@ button[data-action="status"][data-status="done"]:hover {
 @media (max-width: 767px) {
   #btn-bulk { min-height: 44px; }
 }
+/* Progress bar */
+.progress-track {
+  height: 8px; width: 100%;
+  background: var(--surface-3);
+  border-radius: 999px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0;
+  background: rgb(var(--accent));
+  border-radius: 999px;
+  transition: width .4s ease, background-color .3s ease;
+}
+.progress-fill[data-complete="true"] { background: #10b981; }
+
+/* Toast with action button (الحاوية pointer-events:none فلازم نفعّلها للتوست) */
+.toast.has-action {
+  pointer-events: auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.toast .toast-undo {
+  font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+  padding: 4px 10px; border-radius: 6px;
+  background: rgba(var(--accent), .12); color: rgb(var(--accent));
+  border: 1px solid rgba(var(--accent), .4);
+}
+.toast .toast-undo:hover { background: rgba(var(--accent), .2); }

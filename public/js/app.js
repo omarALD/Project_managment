@@ -14,13 +14,35 @@ import { getDeadlineInfo } from './deadline.js';
 import { fetchTasks, createTask, updateStatus, deleteTask } from './tasks.js';
 
 /* ---------- Render ---------- */
+/* ---------- Render ---------- */
+function updateProgress(list, allTasks = list) {
+  const fill = $('#progress-fill');
+  const text = $('#progress-text');
+  const track = $('#progress-track');
+  if (!fill || !text || !track) return;
+
+  const total = list.length;
+  const done = list.filter(t => t.status === 'done').length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const isFiltered = list.length !== allTasks.length;
+
+  fill.style.width = pct + '%';
+  fill.dataset.complete = (total > 0 && pct === 100);
+  text.textContent = `${done} / ${total} · ${pct}%` + (isFiltered ? ` (filtered from ${allTasks.length})` : '');
+  track.setAttribute('aria-valuenow', pct);
+}
+
 function renderAll() {
   applyFilter();
   renderKanban();
   renderCalendar();
+  
+  // تمرير المهام المفلترة والمهام الكلية
+  const filtered = state.filteredTasks || state.tasks || [];
+  const all = state.tasks || [];
+  updateProgress(filtered, all);
 }
-hooks.renderAll = renderAll;   // يربط باقي الموديولات بدون استيراد دائري
-
+hooks.renderAll = renderAll;
 /* ---------- Events ---------- */
 function bindEvents() {
   // Quick deadline buttons
