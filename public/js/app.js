@@ -14,7 +14,6 @@ import { getDeadlineInfo } from './deadline.js';
 import { fetchTasks, createTask, updateStatus, deleteTask } from './tasks.js';
 
 /* ---------- Render ---------- */
-/* ---------- Render ---------- */
 function updateProgress(list, allTasks = list) {
   const fill = $('#progress-fill');
   const text = $('#progress-text');
@@ -36,11 +35,8 @@ function renderAll() {
   applyFilter();
   renderKanban();
   renderCalendar();
-  
-  // تمرير المهام المفلترة والمهام الكلية
-  const filtered = state.filteredTasks || state.tasks || [];
-  const all = state.tasks || [];
-  updateProgress(filtered, all);
+
+  updateProgress(state.visible, state.tasks);
 }
 hooks.renderAll = renderAll;
 /* ---------- Events ---------- */
