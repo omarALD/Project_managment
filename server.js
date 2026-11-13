@@ -81,6 +81,17 @@ TaskSchema.index({ project: 1, deadline: 1 });
 
 const Task = mongoose.model('Task', TaskSchema);
 
+
+/* ---------- Workspace schema ---------- */
+const WorkspaceSchema = new mongoose.Schema(
+  {
+    slug:    { type: String, required: true, unique: true, lowercase: true, trim: true },
+    name:    { type: String, required: true, trim: true, maxlength: 100 },
+    members: { type: [String], default: [] }
+  },
+  { timestamps: true, versionKey: false }
+);
+const Workspace = mongoose.model('Workspace', WorkspaceSchema);
 /* ------------------------------------------------------------
    Middleware
    ------------------------------------------------------------ */
@@ -199,6 +210,37 @@ app.delete('/api/tasks/:id', async (req, res) => {
   }
 });
 
+// صفحة إنشاء workplace
+app.get('/createworkplace', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'createworkplace.html'));
+});
+
+// جلب إعدادات workplace
+app.get('/api/workspaces/:slug', async (req, res) => {
+  const ws = await Workspace.findOne({ slug: req.params.slug.toLowerCase() });
+  if (!ws) return res.status(404).json({ error: 'Not found' });
+  res.json({ slug: ws.slug, name: ws.name, members: ws.members });
+});
+
+// إنشاء workplace
+app.post('/api/workspaces', async (req, res) => {
+  try {
+    const { slug, name, members } = req.body;
+    if (!slug || !name) return res.status(400).json({ error: 'slug and name are required' });
+    if (['createworkplace', 'api'].includes(slug.toLowerCase()))
+      return res.status(400).json({ error: 'Reserved slug' });
+
+    const ws = await Workspace.create({
+      slug,
+      name,
+      members: (members || []).map(m => m.trim()).filter(Boolean)
+    });
+    res.status(201).json({ slug: ws.slug, name: ws.name, members: ws.members });
+  } catch (err) {
+    const msg = err.code === 11000 ? 'This link already exists' : err.message;
+    res.status(400).json({ error: msg });
+  }
+});
 // SPA fallback — يدعم /sec201 /sec202 ...
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

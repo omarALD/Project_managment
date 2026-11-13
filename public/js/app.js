@@ -3,6 +3,7 @@
    ============================================================ */
 
 import { state, hooks } from './state.js';
+import { PROJECTS_CONFIG } from './config.js';
 import { $, $$, toLocalISO, showToast } from './utils.js';
 import { applyFilter, setupProjectContext, bindFilterEvents } from './filters.js';
 import { renderKanban, bindDragDrop, setMobileTab } from './kanban.js';
@@ -120,8 +121,22 @@ function startTicker() {
   }, 1000);
 }
 
+/* ---------- Workspace Loader ---------- */
+async function loadWorkspaceConfig(slug) {
+  if (!slug || PROJECTS_CONFIG[slug]) return; // المشاريع القديمة المكتوبة يدويًا تبقى تعمل
+  try {
+    const res = await fetch(`/api/workspaces/${slug}`);
+    if (!res.ok) return;
+    const ws = await res.json();
+    PROJECTS_CONFIG[slug] = { name: ws.name, members: ws.members };
+  } catch (e) { /* offline: نكمل بدون */ }
+}
+
 /* ---------- Bootstrap ---------- */
 async function init() {
+  const projectSlug = location.pathname.split('/')[1];
+  await loadWorkspaceConfig(projectSlug);
+
   setupProjectContext();   // اسم المادة + الأعضاء + الفلاتر
 
   try {
@@ -141,7 +156,8 @@ async function init() {
   const deadlineEl = $('#task-deadline');
   if (deadlineEl) {
     deadlineEl.value = '';
-      deadlineEl.type = 'text';}
+    deadlineEl.type = 'text';
+  }
 
   await fetchTasks();
   startTicker();

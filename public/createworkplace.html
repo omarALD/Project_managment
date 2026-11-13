@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Workplace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <main class="max-w-xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Create Workplace</h1>
+
+    <form id="ws-form" class="glass-panel p-6 rounded-2xl space-y-4">
+      <div>
+        <label class="block text-xs font-medium mb-1">Workplace title</label>
+        <input id="ws-name" required maxlength="100" placeholder="e.g. CMPS 307 – Software Engineering"
+               class="w-full border rounded-lg px-4 py-2.5 text-sm">
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium mb-1">Link (URL path)</label>
+        <div class="flex items-center gap-2">
+          <span class="text-xs" style="color:var(--text-dim)" id="ws-origin"></span>
+          <input id="ws-slug" required placeholder="cmps307" pattern="[a-z0-9\-]+"
+                 class="flex-1 border rounded-lg px-4 py-2.5 text-sm font-mono">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium mb-1">Members (one per line)</label>
+        <textarea id="ws-members" rows="6" placeholder="Omar Alhomidi&#10;Ahmed Ali&#10;Sara Hassan"
+                  class="w-full border rounded-lg px-4 py-2.5 text-sm"></textarea>
+      </div>
+
+      <p id="ws-error" class="text-sm hidden" style="color:var(--bad-fg)"></p>
+
+      <button type="submit" class="w-full text-white font-semibold rounded-lg py-2.5 text-sm"
+              style="background:rgb(var(--accent))">Create & Open</button>
+    </form>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    $('ws-origin').textContent = location.origin + '/';
+
+    // توليد slug تلقائي من العنوان (ما لم يعدّله المستخدم يدويًا)
+    let slugTouched = false;
+    $('ws-slug').addEventListener('input', () => slugTouched = true);
+    $('ws-name').addEventListener('input', e => {
+      if (slugTouched) return;
+      $('ws-slug').value = e.target.value.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    });
+
+    $('ws-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const body = {
+        name: $('ws-name').value.trim(),
+        slug: $('ws-slug').value.trim().toLowerCase(),
+        members: $('ws-members').value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+      };
+      const res = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        location.href = '/' + data.slug;
+      } else {
+        $('ws-error').textContent = data.error;
+        $('ws-error').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
