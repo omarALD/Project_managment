@@ -123,10 +123,10 @@ function startTicker() {
 
 /* ---------- Workspace Loader ---------- */
 async function loadWorkspaceConfig(slug) {
-  if (!slug || PROJECTS_CONFIG[slug]) return; // المشاريع القديمة المكتوبة يدويًا تبقى تعمل
+  if (!slug || PROJECTS_CONFIG[slug]) return;   // المكتوبة يدويًا تبقى كما هي
   try {
     const res = await fetch(`/api/workspaces/${slug}`);
-    if (!res.ok) return;
+    if (!res.ok) return;                         // غير مسجّلة (404) → الحالة الافتراضية
     const ws = await res.json();
     PROJECTS_CONFIG[slug] = { name: ws.name, members: ws.members };
   } catch (e) { /* offline: نكمل بدون */ }
@@ -134,7 +134,7 @@ async function loadWorkspaceConfig(slug) {
 
 /* ---------- Bootstrap ---------- */
 async function init() {
-  const projectSlug = location.pathname.split('/')[1];
+const projectSlug = (location.pathname.split('/')[1] || '').toLowerCase();
   await loadWorkspaceConfig(projectSlug);
 
   setupProjectContext();   // اسم المادة + الأعضاء + الفلاتر
