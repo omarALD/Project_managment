@@ -303,6 +303,10 @@ app.get('/og/:slug.svg', async (req, res) => {
 // 2. SPA fallback مع حقن وسوم المعاينة (Open Graph) لكل رابط
 const indexTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
 
+// رابط ثابت (نتجنب مشكلة http/https خلف proxy الخاص بـ Render)
+const PUBLIC_URL = process.env.PUBLIC_URL || 'https://project-managment-zucj.onrender.com';
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
 app.get('*', async (req, res) => {
   try {
     const slug = (req.path.split('/')[1] || 'general').toLowerCase();
@@ -321,25 +325,27 @@ app.get('*', async (req, res) => {
       ? `📋 ${total} Tasks (${done} Done, ${todo} To Do) • Kanban Board & Deadlines`
       : `Kanban board, deadlines, and progress tracker for ${ws ? ws.name : slug.toUpperCase()}.`;
 
-    const origin = `${req.protocol}://${req.get('host')}`;
-    const fullUrl = `${origin}/${slug}`;
-    const ogImage = `${origin}/og/${slug}.svg`;
+    const fullUrl = `${PUBLIC_URL}/${slug}`;
+    const ogImage = `${PUBLIC_URL}/og-preview.jpg`;
 
     const ogTags = `
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Team Task Manager">
-  <meta property="og:title" content="${pageTitle.replace(/"/g, '&quot;')}">
-  <meta property="og:description" content="${description.replace(/"/g, '&quot;')}">
+  <meta property="og:title" content="${esc(pageTitle)}">
+  <meta property="og:description" content="${esc(description)}">
   <meta property="og:url" content="${fullUrl}">
   <meta property="og:image" content="${ogImage}">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${pageTitle.replace(/"/g, '&quot;')}">
-  <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}">
+  <meta name="twitter:title" content="${esc(pageTitle)}">
+  <meta name="twitter:description" content="${esc(description)}">
   <meta name="twitter:image" content="${ogImage}">`;
 
     const html = indexTemplate
-      .replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>${ogTags}`)
-      .replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${description.replace(/"/g, '&quot;')}">`);
+      .replace(/<title>.*?<\/title>/, () => `<title>${esc(pageTitle)}</title>${ogTags}`)
+      .replace(/<meta name="description" content=".*?">/, () => `<meta name="description" content="${esc(description)}">`);
 
     res.send(html);
   } catch (err) {
