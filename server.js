@@ -242,9 +242,111 @@ app.post('/api/workspaces', async (req, res) => {
   }
 });
 // SPA fallback — يدعم /sec201 /sec202 ...
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+const fs = require('fs'); // أضف هذا السطر في أعلى server.js مع بقية الـ requires
+
+// 1. مسار توليد صورة المعاينة الديناميكية للرابط (Open Graph Card)
+app.get('/og/:slug.svg', async (req, res) => {
+  try {
+    const slug = req.params.slug.toLowerCase();
+    const ws = await Workspace.findOne({ slug });
+    const title = ws ? ws.name : slug.toUpperCase();
+    const membersCount = ws && ws.members.length ? ws.members.length : 4;
+
+    const tasks = await Task.find({ project: slug });
+    const total = tasks.length;
+    const done = tasks.filter(t => t.status === 'done').length;
+    const inProgress = tasks.filter(t => t.status === 'in-progress').length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+
+    // حماية النصوص من رموز XML الخاصة
+    const esc = s => String(s).replace(/[<>&'"]/g, c => ({
+      '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+    }[c]));
+
+    const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#0f1115"/>
+          <stop offset="100%" stop-color="#1a1f2e"/>
+        </linearGradient>
+        <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3b73d9"/>
+          <stop offset="100%" stop-color="#6aa0fa"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="630" fill="url(#bg)"/>
+      <rect x="60" y="60" width="1080" height="510" rx="32" fill="#161922" stroke="#2a2e36" stroke-width="2"/>
+      
+      <rect x="110" y="115" width="190" height="42" rx="21" fill="#17264a" stroke="#3b73d9" stroke-width="1.5"/>
+      <text x="205" y="142" fill="#93bbff" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" text-anchor="middle">${esc(slug.toUpperCase())}</text>
+      
+      <text x="110" y="235" fill="#f0f1f4" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="700">${esc(title.slice(0, 38))}</text>
+      <text x="110" y="290" fill="#9ca0aa" font-family="system-ui, -apple-system, sans-serif" font-size="26">Team Task Manager · ${membersCount} Members · ${total} Total Tasks</text>
+      
+      <text x="110" y="385" fill="#c5c8cf" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600">Progress: ${done} Done · ${inProgress} In Progress</text>
+      <text x="1090" y="385" fill="#6aa0fa" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" text-anchor="end">${pct}%</text>
+      
+      <rect x="110" y="410" width="980" height="24" rx="12" fill="#2a2e36"/>
+      <rect x="110" y="410" width="${Math.max(24, Math.round(980 * (pct / 100)))}" height="24" rx="12" fill="url(#bar)"/>
+      
+      <text x="110" y="510" fill="#757a86" font-family="monospace" font-size="20">project-managment-zucj.onrender.com/${esc(slug)}</text>
+    </svg>`;
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(svg);
+  } catch (err) {
+    res.status(500).end();
+  }
 });
+
+// 2. SPA fallback مع حقن وسوم المعاينة (Open Graph) لكل رابط
+const indexTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+
+app.get('*', async (req, res) => {
+  try {
+    const slug = (req.path.split('/')[1] || 'general').toLowerCase();
+    const ws = await Workspace.findOne({ slug });
+    const tasks = await Task.find({ project: slug });
+
+    const total = tasks.length;
+    const done = tasks.filter(t => t.status === 'done').length;
+    const todo = tasks.filter(t => t.status === 'todo').length;
+
+    const pageTitle = ws
+      ? `${ws.name} (${slug.toUpperCase()}) — Team Tasks`
+      : `${slug.toUpperCase()} — Team Task Manager`;
+
+    const description = total > 0
+      ? `📋 ${total} Tasks (${done} Done, ${todo} To Do) • Kanban Board & Deadlines`
+      : `Kanban board, deadlines, and progress tracker for ${ws ? ws.name : slug.toUpperCase()}.`;
+
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const fullUrl = `${origin}/${slug}`;
+    const ogImage = `${origin}/og/${slug}.svg`;
+
+    const ogTags = `
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Team Task Manager">
+  <meta property="og:title" content="${pageTitle.replace(/"/g, '&quot;')}">
+  <meta property="og:description" content="${description.replace(/"/g, '&quot;')}">
+  <meta property="og:url" content="${fullUrl}">
+  <meta property="og:image" content="${ogImage}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${pageTitle.replace(/"/g, '&quot;')}">
+  <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}">
+  <meta name="twitter:image" content="${ogImage}">`;
+
+    const html = indexTemplate
+      .replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>${ogTags}`)
+      .replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${description.replace(/"/g, '&quot;')}">`);
+
+    res.send(html);
+  } catch (err) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
