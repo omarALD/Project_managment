@@ -497,3 +497,17 @@ button[data-action="status"][data-status="done"]:hover {
   border: 1px solid rgba(var(--accent), .4);
 }
 .toast .toast-undo:hover { background: rgba(var(--accent), .2); }
+
+/* ───────── Kanban columns: scroll داخلي بدل تطويل الصفحة ───────── */
+[id^="col-"] {
+  max-height: 70vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 4px 2px 2px;          /* عشان ظل الكروت ما ينقص */
+  scrollbar-width: thin;
+  scrollbar-color: #c5c8cf transparent;
+}
+
+@media (max-width: 767px) {
+  [id^="col-"] { max-height: 60vh; }
+}
