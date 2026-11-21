@@ -43,7 +43,7 @@ export const PROJECTS_CONFIG = {
   },
   'cmps303': {
     name: 'cmps303 - Data Structures and Algorithms',
-    members: ['Omar Alhomidi', 'Saad Abdulkadder', 'Abdulhadi']
+    members: ['Omar Alhomidi', 'Saad Abdulkadder', 'AbdulHadi', 'Ahmed']
   },
   'general': {
     name: 'General Workspace',
