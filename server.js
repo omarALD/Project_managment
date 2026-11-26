@@ -1,17 +1,25 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const compression = require('compression');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 8100;
 const MONGO_URI = process.env.MONGO_URI;
+const PUBLIC_URL = process.env.PUBLIC_URL || 'https://project-managment-zucj.onrender.com';
 
 if (!MONGO_URI) {
   console.error('❌ MONGO_URI is required');
   process.exit(1);
 }
 
-mongoose.connect(MONGO_URI)
+// لا نسمح لخطأ عابر بإسقاط السيرفر كاملاً
+process.on('unhandledRejection', err => console.error('Unhandled:', err));
+process.on('uncaughtException', err => console.error('Uncaught:', err));
+
+mongoose
+  .connect(MONGO_URI, { serverSelectionTimeoutMS: 8000, maxPoolSize: 10 })
   .then(() => console.log('✅ Connected to MongoDB Atlas'))
   .catch(err => {
     console.error('❌ MongoDB error:', err);
@@ -19,59 +27,19 @@ mongoose.connect(MONGO_URI)
   });
 
 /* ------------------------------------------------------------
-   Schema — with project field
+   Schemas
    ------------------------------------------------------------ */
 const TaskSchema = new mongoose.Schema(
   {
-    project: {
-      type: String,
-      required: true,
-      default: 'general',
-      index: true,
-      trim: true,
-      maxlength: 60
-    },
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 200
-    },
-    assignee: {
-      type: String,
-      default: 'Unassigned',
-      trim: true,
-      maxlength: 80
-    },
-    deadline: {
-      type: String,
-      default: '',
-      trim: true
-    },
-    startDate: {
-      type: String,
-      default: ''
-    },
-    status: {
-      type: String,
-      enum: ['todo', 'in-progress', 'done'],
-      default: 'todo',
-      index: true
-    },
-    priority: {
-      type: String,
-      enum: ['low', 'medium', 'high', 'critical'],
-      default: 'medium'
-    },
-    category: {
-      type: String,
-      default: 'general',
-      trim: true
-    },
-    completedAt: {
-      type: Date,
-      default: null
-    }
+    project:   { type: String, required: true, default: 'general', index: true, trim: true, maxlength: 60 },
+    title:     { type: String, required: true, trim: true, maxlength: 200 },
+    assignee:  { type: String, default: 'Unassigned', trim: true, maxlength: 80 },
+    deadline:  { type: String, default: '', trim: true },
+    startDate: { type: String, default: '' },
+    status:    { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo', index: true },
+    priority:  { type: String, enum: ['low', 'medium', 'high', 'critical'], default: 'medium' },
+    category:  { type: String, default: 'general', trim: true },
+    completedAt: { type: Date, default: null }
   },
   { timestamps: true, versionKey: false }
 );
@@ -81,8 +49,6 @@ TaskSchema.index({ project: 1, deadline: 1 });
 
 const Task = mongoose.model('Task', TaskSchema);
 
-
-/* ---------- Workspace schema ---------- */
 const WorkspaceSchema = new mongoose.Schema(
   {
     slug:    { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -92,11 +58,14 @@ const WorkspaceSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 const Workspace = mongoose.model('Workspace', WorkspaceSchema);
+
 /* ------------------------------------------------------------
    Middleware
    ------------------------------------------------------------ */
+app.use(compression());
 app.use(express.json({ limit: '100kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+// index:false → كي لا يخدم static الملف index.html مباشرة عند "/" متجاوزاً حقن وسوم المعاينة
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 /* ------------------------------------------------------------
    Helpers
@@ -116,22 +85,50 @@ const formatTask = t => ({
   updatedAt: t.updatedAt
 });
 
-/* ------------------------------------------------------------
-   Routes
-   ------------------------------------------------------------ */
+// كاش إحصائيات الصفحة (لوسوم المعاينة) — يُمسح عند أي تعديل على مهام المشروع
+const statsCache = new Map();
+const invalidateStats = slug => slug && statsCache.delete(String(slug).toLowerCase());
 
-// Get tasks — REQUIRES ?project=xxx
+async function getSlugStats(slug) {
+  const hit = statsCache.get(slug);
+  if (hit && Date.now() - hit.at < 60_000) return hit.data;
+
+  const [ws, counts] = await Promise.all([
+    Workspace.findOne({ slug }).select('name').lean(),
+    Task.aggregate([
+      { $match: { project: slug } },
+      { $group: { _id: '$status', n: { $sum: 1 } } }
+    ])
+  ]);
+
+  const c = Object.fromEntries(counts.map(x => [x._id, x.n]));
+  const data = {
+    ws,
+    total: counts.reduce((s, x) => s + x.n, 0),
+    done: c.done || 0,
+    todo: c.todo || 0
+  };
+
+  if (statsCache.size > 500) statsCache.clear();
+  statsCache.set(slug, { at: Date.now(), data });
+  return data;
+}
+
+/* ------------------------------------------------------------
+   API
+   ------------------------------------------------------------ */
+app.get('/health', (req, res) => res.send('ok'));
+
+// Get tasks — REQUIRES ?project=xxx  (الفرز يتم في الواجهة)
 app.get('/api/tasks', async (req, res) => {
   try {
     const { project, status } = req.query;
-    if (!project) {
-      return res.status(400).json({ error: 'project query param is required' });
-    }
+    if (!project) return res.status(400).json({ error: 'project query param is required' });
 
     const filter = { project };
     if (status) filter.status = status;
 
-    const tasks = await Task.find(filter).sort({  createdAt: -1 });
+    const tasks = await Task.find(filter).lean();
     res.json(tasks.map(formatTask));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -141,21 +138,12 @@ app.get('/api/tasks', async (req, res) => {
 // Create task
 app.post('/api/tasks', async (req, res) => {
   try {
-    const {
-      project,
-      title,
-      assignee,
-      deadline,
-      startDate,
-      status,
-      priority,
-      category
-    } = req.body;
+    const { project, title, assignee, deadline, startDate, status, priority, category } = req.body;
 
     if (!project) return res.status(400).json({ error: 'project is required' });
     if (!title || !title.trim()) return res.status(400).json({ error: 'title is required' });
 
-    const newTask = new Task({
+    const saved = await new Task({
       project: project.trim(),
       title: title.trim(),
       assignee: assignee || 'Unassigned',
@@ -164,9 +152,9 @@ app.post('/api/tasks', async (req, res) => {
       status: status || 'todo',
       priority: priority || 'medium',
       category: category || 'general'
-    });
+    }).save();
 
-    const saved = await newTask.save();
+    invalidateStats(saved.project);
     res.status(201).json(formatTask(saved));
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -182,17 +170,16 @@ app.put('/api/tasks/:id', async (req, res) => {
     delete updates.createdAt;
     delete updates.project; // منع نقل المهمة بين المشاريع
 
-    if (updates.status === 'done') {
-      updates.completedAt = new Date();
-    } else if (updates.status && updates.status !== 'done') {
-      updates.completedAt = null;
-    }
+    if (updates.status === 'done') updates.completedAt = new Date();
+    else if (updates.status) updates.completedAt = null;
 
     const updated = await Task.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true
     });
     if (!updated) return res.status(404).json({ error: 'Task not found' });
+
+    invalidateStats(updated.project);
     res.json(formatTask(updated));
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -204,30 +191,36 @@ app.delete('/api/tasks/:id', async (req, res) => {
   try {
     const deleted = await Task.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Task not found' });
+
+    invalidateStats(deleted.project);
     res.json({ success: true, id: req.params.id });
   } catch (err) {
     res.status(400).json({ error: 'Invalid task ID' });
   }
 });
 
-// صفحة إنشاء workplace
+/* ------------------------------------------------------------
+   Workspaces
+   ------------------------------------------------------------ */
 app.get('/createworkplace', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'createworkplace.html'));
 });
 
-// جلب إعدادات workplace
 app.get('/api/workspaces/:slug', async (req, res) => {
-  const ws = await Workspace.findOne({ slug: req.params.slug.toLowerCase() });
-  if (!ws) return res.status(404).json({ error: 'Not found' });
-  res.json({ slug: ws.slug, name: ws.name, members: ws.members });
+  try {
+    const ws = await Workspace.findOne({ slug: req.params.slug.toLowerCase() }).lean();
+    if (!ws) return res.status(404).json({ error: 'Not found' });
+    res.json({ slug: ws.slug, name: ws.name, members: ws.members });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// إنشاء workplace
 app.post('/api/workspaces', async (req, res) => {
   try {
     const { slug, name, members } = req.body;
     if (!slug || !name) return res.status(400).json({ error: 'slug and name are required' });
-    if (['createworkplace', 'api'].includes(slug.toLowerCase()))
+    if (['createworkplace', 'api', 'health'].includes(slug.toLowerCase()))
       return res.status(400).json({ error: 'Reserved slug' });
 
     const ws = await Workspace.create({
@@ -235,87 +228,28 @@ app.post('/api/workspaces', async (req, res) => {
       name,
       members: (members || []).map(m => m.trim()).filter(Boolean)
     });
+    invalidateStats(ws.slug);
     res.status(201).json({ slug: ws.slug, name: ws.name, members: ws.members });
   } catch (err) {
     const msg = err.code === 11000 ? 'This link already exists' : err.message;
     res.status(400).json({ error: msg });
   }
 });
-// SPA fallback — يدعم /sec201 /sec202 ...
-const fs = require('fs'); // أضف هذا السطر في أعلى server.js مع بقية الـ requires
 
-// 1. مسار توليد صورة المعاينة الديناميكية للرابط (Open Graph Card)
-app.get('/og/:slug.svg', async (req, res) => {
-  try {
-    const slug = req.params.slug.toLowerCase();
-    const ws = await Workspace.findOne({ slug });
-    const title = ws ? ws.name : slug.toUpperCase();
-    const membersCount = ws && ws.members.length ? ws.members.length : 4;
-
-    const tasks = await Task.find({ project: slug });
-    const total = tasks.length;
-    const done = tasks.filter(t => t.status === 'done').length;
-    const inProgress = tasks.filter(t => t.status === 'in-progress').length;
-    const pct = total ? Math.round((done / total) * 100) : 0;
-
-    // حماية النصوص من رموز XML الخاصة
-    const esc = s => String(s).replace(/[<>&'"]/g, c => ({
-      '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
-    }[c]));
-
-    const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#0f1115"/>
-          <stop offset="100%" stop-color="#1a1f2e"/>
-        </linearGradient>
-        <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#3b73d9"/>
-          <stop offset="100%" stop-color="#6aa0fa"/>
-        </linearGradient>
-      </defs>
-      <rect width="1200" height="630" fill="url(#bg)"/>
-      <rect x="60" y="60" width="1080" height="510" rx="32" fill="#161922" stroke="#2a2e36" stroke-width="2"/>
-      
-      <rect x="110" y="115" width="190" height="42" rx="21" fill="#17264a" stroke="#3b73d9" stroke-width="1.5"/>
-      <text x="205" y="142" fill="#93bbff" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" text-anchor="middle">${esc(slug.toUpperCase())}</text>
-      
-      <text x="110" y="235" fill="#f0f1f4" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="700">${esc(title.slice(0, 38))}</text>
-      <text x="110" y="290" fill="#9ca0aa" font-family="system-ui, -apple-system, sans-serif" font-size="26">Team Task Manager · ${membersCount} Members · ${total} Total Tasks</text>
-      
-      <text x="110" y="385" fill="#c5c8cf" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600">Progress: ${done} Done · ${inProgress} In Progress</text>
-      <text x="1090" y="385" fill="#6aa0fa" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" text-anchor="end">${pct}%</text>
-      
-      <rect x="110" y="410" width="980" height="24" rx="12" fill="#2a2e36"/>
-      <rect x="110" y="410" width="${Math.max(24, Math.round(980 * (pct / 100)))}" height="24" rx="12" fill="url(#bar)"/>
-      
-      <text x="110" y="510" fill="#757a86" font-family="monospace" font-size="20">project-managment-zucj.onrender.com/${esc(slug)}</text>
-    </svg>`;
-
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=300');
-    res.send(svg);
-  } catch (err) {
-    res.status(500).end();
-  }
-});
-
-// 2. SPA fallback مع حقن وسوم المعاينة (Open Graph) لكل رابط
+/* ------------------------------------------------------------
+   SPA fallback + Open Graph injection
+   ------------------------------------------------------------ */
 const indexTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-
-// رابط ثابت (نتجنب مشكلة http/https خلف proxy الخاص بـ Render)
-const PUBLIC_URL = process.env.PUBLIC_URL || 'https://project-managment-zucj.onrender.com';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 app.get('*', async (req, res) => {
+  // مسارات API المجهولة والملفات المفقودة (favicon, robots...) لا تستحق استعلامات
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+  if (req.path.includes('.')) return res.status(404).end();
+
   try {
     const slug = (req.path.split('/')[1] || 'general').toLowerCase();
-    const ws = await Workspace.findOne({ slug });
-    const tasks = await Task.find({ project: slug });
-
-    const total = tasks.length;
-    const done = tasks.filter(t => t.status === 'done').length;
-    const todo = tasks.filter(t => t.status === 'todo').length;
+    const { ws, total, done, todo } = await getSlugStats(slug);
 
     const pageTitle = ws
       ? `${ws.name} (${slug.toUpperCase()}) — Team Tasks`
@@ -352,7 +286,6 @@ app.get('*', async (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

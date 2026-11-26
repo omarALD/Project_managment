@@ -46,10 +46,9 @@ function updateProgress(list, allTasks = list) {
 
 function renderAll() {
   applyFilter();
-  state.visible = sortByDeadline(state.visible); // 👈 الفرز بعد الفلترة وقبل الرسم
+  state.visible = sortByDeadline(state.visible); // الفرز بعد الفلترة وقبل الرسم
   renderKanban();
   renderCalendar();
-
   updateProgress(state.visible, state.tasks);
 }
 hooks.renderAll = renderAll;
@@ -62,7 +61,6 @@ function bindEvents() {
       const d = new Date();
       d.setHours(d.getHours() + parseInt(btn.dataset.quicktime, 10));
       const el = $('#task-deadline');
-      
       if (el) {
         el.type = 'datetime-local';
         el.value = toLocalISO(d);
@@ -75,12 +73,6 @@ function bindEvents() {
   bindDragDrop();
   bindCalendarEvents();
 
-  // Refresh
-  $('#btn-refresh')?.addEventListener('click', async () => {
-    showToast('Refreshing...', 'info', 1200);
-    await fetchTasks();
-  });
-
   // New task form
   $('#task-form')?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -92,6 +84,7 @@ function bindEvents() {
       title,
       assignee: $('#task-assignee')?.value || 'Unassigned',
       deadline: $('#task-deadline')?.value || '',
+      startDate: toLocalISO(new Date()), // توقيت محلي (بدل UTC من السيرفر)
       priority: $('#task-priority')?.value || 'medium',
       status: 'todo'
     });
@@ -151,8 +144,17 @@ function startTicker() {
       else if (el.textContent !== info.timeText) el.textContent = info.timeText;
     });
 
-    if (needsRender) { renderKanban(); renderCalendar(); }
+    // لا نعيد الرسم أثناء السحب؛ سيُعاد في الثانية التالية. ونمر عبر renderAll ليبقى الفرز والتقدم متسقين
+    if (needsRender && !state.dragId) renderAll();
   }, 1000);
+}
+
+/* ---------- Polling (بدون تداخل) ---------- */
+let polling = false;
+async function poll() {
+  if (document.hidden || polling) return;
+  polling = true;
+  try { await fetchTasks(true); } finally { polling = false; }
 }
 
 /* ---------- Workspace Loader ---------- */
@@ -185,18 +187,23 @@ async function init() {
 
   document.title = `${state.currentProject.toUpperCase()} — Team Task Manager`;
 
-  const defaultDeadline = new Date();
-  defaultDeadline.setHours(defaultDeadline.getHours() + 24);
   const deadlineEl = $('#task-deadline');
   if (deadlineEl) {
     deadlineEl.value = '';
     deadlineEl.type = 'text';
   }
 
-  await fetchTasks();
+  try {
+    await fetchTasks();
+  } catch (err) {
+    console.error('Load error:', err);
+    showToast('Failed to load tasks: ' + err.message, 'error', 6000);
+  }
   startTicker();
 
-  setInterval(() => { if (!document.hidden) fetchTasks(true); }, 15000);
+  setInterval(poll, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+
   setInterval(() => {
     if (!document.hidden && state.calendarView === 'day') renderCalendar(true);
   }, 60000);

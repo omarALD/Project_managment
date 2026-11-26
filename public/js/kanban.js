@@ -77,8 +77,16 @@ export function renderKanban() {
 }
 
 /* ---------- Drag & Drop ---------- */
+let overPanel = null; // آخر عمود مُظلَّل (لتجنب تعديل DOM مع كل حدث dragover)
+
 function clearDragStyles() {
+  overPanel = null;
   $$('[data-drop-status]').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500/60'));
+}
+
+// إصلاح: إلغاء السحب أو الإفلات في نفس العمود لا يعيد بناء البطاقة، فكانت تبقى باهتة
+function clearFadedCards() {
+  $$('[data-card-id].opacity-40').forEach(c => c.classList.remove('opacity-40'));
 }
 
 export function bindDragDrop() {
@@ -103,7 +111,9 @@ export function bindDragDrop() {
     const col = e.target.closest('[data-drop-status]');
     if (!col || !state.dragId) return;
     e.preventDefault();
+    if (col === overPanel) return;
     clearDragStyles();
+    overPanel = col;
     col.classList.add('ring-2', 'ring-indigo-500/60');
   });
 
@@ -120,7 +130,8 @@ export function bindDragDrop() {
   board.addEventListener('dragend', () => {
     state.dragId = null;
     clearDragStyles();
-    renderKanban();
+    clearFadedCards();
+    renderKanban(); // يلحق أي تحديث تأجّل أثناء السحب
   });
 }
 
