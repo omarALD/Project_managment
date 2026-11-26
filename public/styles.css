@@ -20,7 +20,7 @@
   --info-bg: #eff6ff;  --info-fg: #1e40af;  --info-br: #bfdbfe;
 }
 
-/* ───────── Base ───────── */
+/* ───────── Base & Forms ───────── */
 html { color-scheme: light; }
 
 body {
@@ -32,7 +32,6 @@ body {
   min-height: 100vh;
 }
 
-/* ضبط ألوان القوائم والمدخلات للثيم الفاتح */
 input, select, textarea {
   color: var(--text) !important;
   background-color: var(--surface) !important;
@@ -43,7 +42,6 @@ input, select, textarea {
   opacity: 1;
 }
 
-/* ضبط مدخلات التاريخ والوقت للهواتف */
 input[type="datetime-local"] {
   direction: ltr;
   text-align: left;
@@ -51,33 +49,39 @@ input[type="datetime-local"] {
 input[type="datetime-local"]::-webkit-datetime-edit {
   color: var(--text);
 }
-
-option {
-  background-color: #ffffff !important;
-  color: #0f1115 !important;
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: .6;
+  cursor: pointer;
+  transition: opacity .15s ease;
+}
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
-/* إصلاح العناوين والنصوص داخل الكروت المضمنة ديناميكياً */
+option {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
 [id^="col-"] h4 {
-  color: #0f1115 !important;
+  color: var(--text) !important;
 }
 
 button:not(:disabled) { cursor: pointer; }
 button:disabled, input:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
 
-/* ───────── Focus ───────── */
+/* ───────── Focus & Accessibility ───────── */
 button:focus-visible,
 a:focus-visible,
 select:focus-visible,
 input:focus-visible,
-[tabindex]:focus-visible,
-.cal-event:focus-visible {
+[tabindex]:focus-visible {
   outline: 2px solid rgba(var(--accent), .9);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* ───────── Skip link ───────── */
 .skip-link {
   position: fixed; top: .5rem; left: .5rem; z-index: 100;
   padding: .5rem .9rem; border-radius: 8px;
@@ -87,20 +91,41 @@ input:focus-visible,
 }
 .skip-link:focus, .skip-link:focus-visible { transform: translateY(0); }
 
-/* ───────── Section label ───────── */
+/* ───────── Layout & Surfaces ───────── */
 .section-label {
   font-size: 12px; font-weight: 600; letter-spacing: .08em;
   text-transform: uppercase; color: var(--text-dim);
 }
 
-/* ───────── Surfaces ───────── */
 .glass-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: 0 1px 3px rgba(15, 17, 21, .04);
 }
 
-/* كروت داخل الأعمدة */
+.rounded-3xl, .rounded-2xl { border-radius: 12px !important; }
+.rounded-xl { border-radius: 8px !important; }
+
+.animate-pulse, .animate-ping { animation: none !important; }
+
+/* ───────── Scrollbars ───────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-2); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca0aa; }
+
+/* ───────── Kanban Board ───────── */
+[data-drop-status] { transition: box-shadow .15s ease; }
+
+[id^="col-"] {
+  max-height: 70vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 4px 2px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
 [id^="col-"] .glass-panel {
   background: var(--surface-2);
   border-color: var(--border) !important;
@@ -111,65 +136,19 @@ input:focus-visible,
   border-color: var(--border-strong) !important;
 }
 
-/* كروت المتأخرة */
 [id^="col-"] .glass-panel[class*="border-rose"] {
   background: #fff5f5 !important;
   border-color: var(--bad-br) !important;
 }
 [id^="col-"] .glass-panel[class*="border-rose"]:hover {
-  background: #ffe4e6 !important;
+  background: var(--bad-bg) !important;
 }
-
-/* ───────── إيقاف التأثيرات المزعجة ───────── */
-.animate-pulse, .animate-ping, .animate-glow { animation: none !important; }
-
-/* ───────── Radii ───────── */
-.rounded-3xl, .rounded-2xl { border-radius: 12px !important; }
-.rounded-xl { border-radius: 8px !important; }
-
-/* ───────── Scrollbar ───────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--surface-2); }
-::-webkit-scrollbar-thumb { background: #c5c8cf; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca0aa; }
-
-/* ───────── Datetime picker ───────── */
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: none; opacity: .6; cursor: pointer; transition: opacity .15s ease;
-}
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
-
-/* ───────── Connection status ───────── */
-#connection-status {
-  white-space: nowrap;
-  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
-}
-
-/* ───────── Drag & drop ───────── */
-[data-drop-status] { transition: box-shadow .15s ease; }
 
 /* ═══════════════════════════════════════════
    Light-mode overrides لألوان يولّدها JS
-   (JS يولّد كلاسات مصممة للخلفيات الداكنة)
    ═══════════════════════════════════════════ */
 
-/* Connection status: Live Sync */
-#connection-status[class*="bg-emerald-500"] {
-  background: var(--ok-bg) !important;
-  color: var(--ok-fg) !important;
-  border-color: var(--ok-br) !important;
-}
-#connection-status[class*="bg-emerald-500"] .bg-emerald-400 { background: #10b981 !important; }
-
-/* Connection status: Offline */
-#connection-status[class*="bg-amber-500"] {
-  background: var(--warn-bg) !important;
-  color: var(--warn-fg) !important;
-  border-color: var(--warn-br) !important;
-}
-#connection-status[class*="bg-amber-500"] .bg-amber-400 { background: #f59e0b !important; }
-
-/* Badge: ON TRACK / Completed */
+/* Badges: ON TRACK / DUE SOON / OVERDUE */
 [class*="bg-emerald-500/10"][class*="text-emerald-400"],
 [class*="bg-emerald-500/10"][class*="text-emerald-300"] {
   background: var(--ok-bg) !important;
@@ -177,7 +156,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
   border-color: var(--ok-br) !important;
 }
 
-/* Badge: DUE SOON */
 [class*="bg-amber-500/20"][class*="text-amber-300"],
 [class*="bg-amber-500/20"][class*="text-amber-400"] {
   background: var(--warn-bg) !important;
@@ -185,7 +163,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
   border-color: var(--warn-br) !important;
 }
 
-/* Badge: OVERDUE */
 [class*="bg-rose-500/20"][class*="text-rose-400"],
 [class*="bg-rose-500/20"][class*="text-rose-300"] {
   background: var(--bad-bg) !important;
@@ -193,7 +170,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
   border-color: var(--bad-br) !important;
 }
 
-/* زر status: To Do */
+/* Card Status Buttons */
 button[data-action="status"][data-status="todo"] {
   background: var(--surface-3) !important;
   color: #2a2e36 !important;
@@ -203,7 +180,6 @@ button[data-action="status"][data-status="todo"]:hover {
   background: var(--border) !important;
 }
 
-/* زر status: Progress */
 button[data-action="status"][data-status="in-progress"] {
   background: var(--info-bg) !important;
   color: var(--info-fg) !important;
@@ -213,7 +189,6 @@ button[data-action="status"][data-status="in-progress"]:hover {
   background: #dbeafe !important;
 }
 
-/* زر status: Done */
 button[data-action="status"][data-status="done"] {
   background: var(--ok-bg) !important;
   color: var(--ok-fg) !important;
@@ -223,7 +198,7 @@ button[data-action="status"][data-status="done"]:hover {
   background: #bbf7d0 !important;
 }
 
-/* أزرار الفلاتر غير النشطة (assignee + priority) */
+/* Filter Pills & Quicktime Presets */
 [data-assignee]:not([class*="bg-indigo"]),
 [data-priority]:not([class*="bg-purple"]) {
   background: var(--surface-2) !important;
@@ -236,7 +211,6 @@ button[data-action="status"][data-status="done"]:hover {
   color: var(--text) !important;
 }
 
-/* أزرار quicktime */
 .quicktime-btn {
   background: var(--surface-3) !important;
   color: var(--text-dim) !important;
@@ -246,41 +220,34 @@ button[data-action="status"][data-status="done"]:hover {
   color: var(--text) !important;
 }
 
-/* زر Refresh */
-#btn-refresh {
-  background: var(--surface-2) !important;
-  color: #2a2e36 !important;
-  border-color: var(--border) !important;
-}
-#btn-refresh:hover {
-  background: var(--surface-3) !important;
-  color: var(--text) !important;
-}
-
-/* أزرار التقويم (prev / today / next) */
-#cal-prev, #cal-next, #cal-today {
-  color: var(--text-dim) !important;
-}
-#cal-prev:hover, #cal-next:hover, #cal-today:hover {
-  color: var(--text) !important;
-  background: var(--surface-3) !important;
-}
-
-/* أزرار التقويم cal-view-btn — idle */
+/* Calendar Controls */
+#cal-prev, #cal-next, #cal-today,
 .cal-view-btn:not([class*="bg-purple"]) {
   color: var(--text-dim) !important;
 }
+#cal-prev:hover, #cal-next:hover, #cal-today:hover,
 .cal-view-btn:not([class*="bg-purple"]):hover {
   color: var(--text) !important;
   background: var(--surface-3) !important;
 }
 
-/* "No tasks" + "Drag cards" */
 .text-slate-600 { color: #9ca0aa !important; }
 
-/* ═══════════════════════════════════════════
-   Calendar
-   ═══════════════════════════════════════════ */
+/* ───────── Progress Bar ───────── */
+.progress-track {
+  height: 8px; width: 100%;
+  background: var(--surface-3);
+  border-radius: 999px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0;
+  background: rgb(var(--accent));
+  border-radius: 999px;
+  transition: width .4s ease, background-color .3s ease;
+}
+.progress-fill[data-complete="true"] { background: #10b981; }
+
+/* ───────── Calendar ───────── */
 #calendar-container { overflow-x: auto; padding-bottom: 4px; }
 
 .cal-cell {
@@ -288,7 +255,7 @@ button[data-action="status"][data-status="done"]:hover {
   position: relative;
   min-height: 96px;
 }
-.cal-cell:hover { background: rgba(59, 115, 217, .04); }
+.cal-cell:hover { background: rgba(var(--accent), .04); }
 
 .cal-cell.today {
   border-color: rgba(var(--accent), .6) !important;
@@ -302,7 +269,6 @@ button[data-action="status"][data-status="done"]:hover {
 }
 .cal-cell.other-month { opacity: .4; }
 
-/* cal-event — override ألوان JS */
 .cal-event {
   display: block;
   font-size: 10px;
@@ -311,11 +277,8 @@ button[data-action="status"][data-status="done"]:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
-  transition: filter .15s ease;
   border-left: 3px solid;
 }
-.cal-event:hover, .cal-event:focus-visible { filter: brightness(.95); }
 
 .cal-event[class*="text-rose-200"] {
   background: var(--bad-bg) !important;
@@ -343,7 +306,7 @@ button[data-action="status"][data-status="done"]:hover {
   min-height: 44px;
   position: relative;
 }
-.cal-hour-slot:hover { background: rgba(59, 115, 217, .03); }
+.cal-hour-slot:hover { background: rgba(var(--accent), .03); }
 
 .cal-now-line {
   position: absolute; left: 0; right: 0;
@@ -354,9 +317,18 @@ button[data-action="status"][data-status="done"]:hover {
   width: 8px; height: 8px; border-radius: 50%; background: #dc2626;
 }
 
-/* ═══════════════════════════════════════════
-   Toast
-   ═══════════════════════════════════════════ */
+/* ───────── Modals & Bulk Import ───────── */
+#edit-modal,
+#bulk-import-modal {
+  background: rgba(15, 17, 21, .45) !important;
+}
+
+.bulk-badge { background: var(--surface-3); color: var(--text-dim); border-color: var(--border); }
+.bulk-badge[data-state="json"]    { background: var(--ok-bg);   color: var(--ok-fg);   border-color: var(--ok-br); }
+.bulk-badge[data-state="text"]    { background: var(--info-bg); color: var(--info-fg); border-color: var(--info-br); }
+.bulk-badge[data-state="invalid"] { background: var(--bad-bg);  color: var(--bad-fg);  border-color: var(--bad-br); }
+
+/* ───────── Toast Notifications ───────── */
 #toast-container { pointer-events: none; }
 
 .toast {
@@ -366,7 +338,7 @@ button[data-action="status"][data-status="done"]:hover {
   font-size: 13px;
   font-weight: 500;
   border: 1px solid;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   box-shadow: 0 4px 12px rgba(15, 17, 21, .1);
   word-break: break-word;
@@ -383,9 +355,7 @@ button[data-action="status"][data-status="done"]:hover {
 .toast.removing { animation: toastOut .25s ease-in forwards; }
 @keyframes toastOut { to { opacity: 0; transform: translateX(30px); } }
 
-/* ═══════════════════════════════════════════
-   Mobile status tabs
-   ═══════════════════════════════════════════ */
+/* ───────── Mobile Status Tabs ───────── */
 .status-tab {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -401,19 +371,13 @@ button[data-action="status"][data-status="done"]:hover {
 }
 .status-tab .tab-count { font-size: 12px; font-weight: 700; }
 
-/* ═══════════════════════════════════════════
-   Modal backdrop
-   ═══════════════════════════════════════════ */
-#edit-modal { background: rgba(15, 17, 21, .45) !important; }
-
-/* ═══════════════════════════════════════════
-   MOBILE (< 768px)
-   ═══════════════════════════════════════════ */
+/* ───────── Mobile (< 768px) ───────── */
 @media (max-width: 767px) {
   body { overflow-x: hidden; }
 
   .kanban-panel:not(.mobile-active) { display: none !important; }
   .glass-panel { padding: 1rem !important; }
+  [id^="col-"] { max-height: 60vh; }
 
   input, select, textarea { font-size: 16px !important; }
   input[type="datetime-local"] { display: block; min-width: 0; max-width: 100%; }
@@ -433,7 +397,7 @@ button[data-action="status"][data-status="done"]:hover {
 
   .cal-view-btn,
   #cal-prev, #cal-next, #cal-today,
-  #btn-refresh,
+  #btn-bulk, #btn-copy-json,
   [data-assignee], [data-priority] { min-height: 44px; }
   #cal-prev, #cal-next { min-width: 44px; }
 
@@ -450,9 +414,7 @@ button[data-action="status"][data-status="done"]:hover {
   #edit-form { max-height: 90vh; overflow-y: auto; }
 }
 
-/* ═══════════════════════════════════════════
-   Reduced motion
-   ═══════════════════════════════════════════ */
+/* ───────── Reduced Motion ───────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
@@ -460,54 +422,4 @@ button[data-action="status"][data-status="done"]:hover {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
-}
-/* Bulk import */
-#bulk-import-modal { background: rgba(15, 17, 21, .45) !important; }
-.bulk-badge { background: var(--surface-3); color: var(--text-dim); border-color: var(--border); }
-.bulk-badge[data-state="json"]    { background: var(--ok-bg);   color: var(--ok-fg);   border-color: var(--ok-br); }
-.bulk-badge[data-state="text"]    { background: var(--info-bg); color: var(--info-fg); border-color: var(--info-br); }
-.bulk-badge[data-state="invalid"] { background: var(--bad-bg);  color: var(--bad-fg);  border-color: var(--bad-br); }
-
-@media (max-width: 767px) {
-  #btn-bulk { min-height: 44px; }
-}
-/* Progress bar */
-.progress-track {
-  height: 8px; width: 100%;
-  background: var(--surface-3);
-  border-radius: 999px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; width: 0;
-  background: rgb(var(--accent));
-  border-radius: 999px;
-  transition: width .4s ease, background-color .3s ease;
-}
-.progress-fill[data-complete="true"] { background: #10b981; }
-
-/* Toast with action button (الحاوية pointer-events:none فلازم نفعّلها للتوست) */
-.toast.has-action {
-  pointer-events: auto;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-}
-.toast .toast-undo {
-  font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
-  padding: 4px 10px; border-radius: 6px;
-  background: rgba(var(--accent), .12); color: rgb(var(--accent));
-  border: 1px solid rgba(var(--accent), .4);
-}
-.toast .toast-undo:hover { background: rgba(var(--accent), .2); }
-
-/* ───────── Kanban columns: scroll داخلي بدل تطويل الصفحة ───────── */
-[id^="col-"] {
-  max-height: 70vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 2px 4px 2px 2px;          /* عشان ظل الكروت ما ينقص */
-  scrollbar-width: thin;
-  scrollbar-color: #c5c8cf transparent;
-}
-
-@media (max-width: 767px) {
-  [id^="col-"] { max-height: 60vh; }
 }
