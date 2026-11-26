@@ -4,29 +4,11 @@
 
 import { state, hooks } from './state.js';
 import { apiRequest, loadLocalTasks, saveLocalTasks } from './api.js';
-import { $, uid, showToast } from './utils.js';
+import { uid, showToast } from './utils.js';
 
 let lastSig = null;     // بصمة آخر بيانات رُسمت (لتجنب إعادة الرسم بلا تغيير)
 let fetchSeq = 0;       // لتجاهل الردود المتأخرة/القديمة
 let pending = 0;        // عدد التعديلات الجارية (نوقف الـ polling خلالها)
-let lastOnline = null;
-
-export function updateConnectionStatus(online) {
-  const el = $('#connection-status');
-  if (!el || lastOnline === online) return; // لا نعيد كتابة DOM بلا داعٍ
-  lastOnline = online;
-  if (online) {
-    el.className =
-      'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-    el.innerHTML =
-      '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Sync';
-  } else {
-    el.className =
-      'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
-    el.innerHTML =
-      '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Offline (Local)';
-  }
-}
 
 export async function fetchTasks(silent = false) {
   if (silent && pending > 0) return; // تعديل جارٍ: لا نكتب بيانات قديمة فوق الواجهة
@@ -46,6 +28,7 @@ export async function fetchTasks(silent = false) {
     const data = await apiRequest(`/tasks?project=${encodeURIComponent(state.currentProject)}`);
     tasks = Array.isArray(data) ? data : [];
   } catch (err) {
+    if (silent && state.tasks.length) return; // انقطاع عابر: نبقي المهام الحالية كما هي
     if (!silent) console.warn('API unreachable, local mode:', err.message);
     local = true;
     tasks = loadLocalTasks().filter(t => t.project === state.currentProject);
@@ -55,7 +38,6 @@ export async function fetchTasks(silent = false) {
   if (seq !== fetchSeq || (silent && pending > 0)) return;
 
   state.isLocalMode = local;
-  updateConnectionStatus(!local);
 
   const sig = (local ? 'L' : 'R') + JSON.stringify(tasks);
   if (silent && sig === lastSig) return; // لا تغيير → لا رسم
