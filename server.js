@@ -161,6 +161,40 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
+// Bulk create — طلب واحد لكل الاستيراد (لازم قبل مسارات :id)
+app.post('/api/tasks/bulk', async (req, res) => {
+  try {
+    const { project, tasks } = req.body;
+
+    if (!project || !String(project).trim()) return res.status(400).json({ error: 'project is required' });
+    if (!Array.isArray(tasks) || !tasks.length) return res.status(400).json({ error: 'tasks[] is required' });
+
+    const slug = String(project).trim();
+    const startDate = new Date().toISOString().slice(0, 16);
+
+    const docs = tasks
+      .filter(t => t && typeof t === 'object' && String(t.title || '').trim())
+      .map(t => ({
+        project: slug,
+        title: String(t.title).trim(),
+        assignee: t.assignee || 'Unassigned',
+        deadline: t.deadline || '',
+        startDate,
+        status: ['todo', 'in-progress', 'done'].includes(t.status) ? t.status : 'todo',
+        priority: ['low', 'medium', 'high', 'critical'].includes(t.priority) ? t.priority : 'medium',
+        category: t.category || 'general'
+      }));
+
+    if (!docs.length) return res.status(400).json({ error: 'No valid tasks (each needs a title)' });
+
+    const saved = await Task.insertMany(docs); // ordered: يحفظ الترتيب الأصلي
+    invalidateStats(slug);
+    res.status(201).json(saved.map(formatTask));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Update task
 app.put('/api/tasks/:id', async (req, res) => {
   try {

@@ -53,6 +53,38 @@ function renderAll() {
 }
 hooks.renderAll = renderAll;
 
+/* ---------- Copy JSON (clipboard backup) ---------- */
+// نفس الشكل الذي يقبله Import Tasks: { title, assignee, priority, status, deadline }
+function exportTasksJSON() {
+  return JSON.stringify(
+    state.tasks.map(t => {
+      const item = {
+        title: t.title,
+        assignee: t.assignee,
+        priority: t.priority || 'medium',
+        status: t.status || 'todo'
+      };
+      if (t.deadline) item.deadline = t.deadline; // بدون ديدلاين: نتركه فارغًا كي لا يُخترع عند الاستيراد
+      return item;
+    }),
+    null,
+    2
+  );
+}
+
+async function copyTasksJSON() {
+  if (!state.tasks.length) {
+    showToast('No tasks to copy', 'info');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(exportTasksJSON());
+    showToast('Copied tasks JSON to clipboard', 'success');
+  } catch (err) {
+    showToast('Copy failed: ' + err.message, 'error');
+  }
+}
+
 /* ---------- Events ---------- */
 function bindEvents() {
   // Quick deadline buttons
@@ -72,6 +104,9 @@ function bindEvents() {
   bindEditModal();
   bindDragDrop();
   bindCalendarEvents();
+
+  // Copy JSON backup
+  $('#btn-copy-json')?.addEventListener('click', copyTasksJSON);
 
   // New task form
   $('#task-form')?.addEventListener('submit', async e => {

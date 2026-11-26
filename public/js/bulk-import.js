@@ -5,6 +5,7 @@
 import { state, hooks } from './state.js';
 import { $, $$, toLocalISO, showToast } from './utils.js';
 import { getProjectInfo } from './config.js';
+import { apiRequest } from './api.js';
 import { createTask, fetchTasks } from './tasks.js';
 
 const BULK_PRIORITIES = ['low', 'medium', 'high', 'critical'];
@@ -66,12 +67,27 @@ async function importBulkTasks(inputText) {
   }
 
   let added = 0;
-  for (const p of payloads) {            // sequential keeps the original order
-    if (await createTask(p, { silent: true })) added++;
-  }
 
-  if (state.isLocalMode) hooks.renderAll();
-  else await fetchTasks(true);
+  if (state.isLocalMode) {
+    // Offline: نحفظ محليًا عبر createTask (localStorage) بنفس الترتيب
+    for (const p of payloads) {
+      if (await createTask(p, { silent: true })) added++;
+    }
+    hooks.renderAll();
+  } else {
+    // Online: طلب واحد لكل المهام
+    try {
+      const created = await apiRequest('/tasks/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ project: state.currentProject, tasks: payloads })
+      });
+      added = Array.isArray(created) ? created.length : payloads.length;
+    } catch (err) {
+      showToast(`Failed: ${err.message}`, 'error');
+      return false;
+    }
+    await fetchTasks(true);
+  }
 
   const skipped = items.length - payloads.length;
   if (added) {
