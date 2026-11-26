@@ -131,7 +131,7 @@ app.get('/api/tasks', async (req, res) => {
     const filter = { project };
     if (status) filter.status = status;
 
-    const tasks = await Task.find(filter).sort({ deadline: 1, createdAt: -1 });
+    const tasks = await Task.find(filter).sort({  createdAt: -1 });
     res.json(tasks.map(formatTask));
   } catch (err) {
     res.status(500).json({ error: err.message });

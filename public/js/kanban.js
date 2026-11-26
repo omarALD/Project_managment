@@ -51,16 +51,8 @@ function kanbanCardHTML(task, info) {
 export function renderKanban() {
   if (state.dragId) return; // لا تعيد الرسم أثناء السحب كي لا يُلغى
 
-  const priorityWeight = { critical: 0, high: 1, medium: 2, low: 3 };
-  const sorted = [...state.visible].sort((a, b) => {
-    const pa = priorityWeight[a.priority] ?? 2;
-    const pb = priorityWeight[b.priority] ?? 2;
-    if (pa !== pb) return pa - pb;
-    return (a.deadline || '').localeCompare(b.deadline || '');
-  });
-
   const groups = { todo: [], 'in-progress': [], done: [] };
-  sorted.forEach(t => groups[t.status]?.push(t));
+  state.visible.forEach(t => groups[t.status]?.push(t));
 
   Object.keys(groups).forEach(status => {
     const col = $(`#col-${status}`);

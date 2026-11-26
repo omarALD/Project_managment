@@ -13,6 +13,19 @@ import { bindBulkImport } from './bulk-import.js';
 import { getDeadlineInfo } from './deadline.js';
 import { fetchTasks, createTask, updateStatus, deleteTask } from './tasks.js';
 
+/* ---------- Auto sort by nearest deadline ---------- */
+const deadlineTs = t => {
+  const ts = Date.parse(t.deadline);
+  return Number.isNaN(ts) ? Infinity : ts; // بدون ديدلاين → آخر القائمة
+};
+
+function sortByDeadline(tasks) {
+  return tasks
+    .map(t => ({ t, k: deadlineTs(t) }))               // نحسب التاريخ مرة واحدة
+    .sort((a, b) => (a.k === b.k ? 0 : a.k < b.k ? -1 : 1))
+    .map(x => x.t);
+}
+
 /* ---------- Render ---------- */
 function updateProgress(list, allTasks = list) {
   const fill = $('#progress-fill');
@@ -33,12 +46,14 @@ function updateProgress(list, allTasks = list) {
 
 function renderAll() {
   applyFilter();
+  state.visible = sortByDeadline(state.visible); // 👈 الفرز بعد الفلترة وقبل الرسم
   renderKanban();
   renderCalendar();
 
   updateProgress(state.visible, state.tasks);
 }
 hooks.renderAll = renderAll;
+
 /* ---------- Events ---------- */
 function bindEvents() {
   // Quick deadline buttons
@@ -48,9 +63,10 @@ function bindEvents() {
       d.setHours(d.getHours() + parseInt(btn.dataset.quicktime, 10));
       const el = $('#task-deadline');
       
-      if (el)
-        {el.type = 'datetime-local'; // 👈 أضف هذا السطر هنا
-         el.value = toLocalISO(d);}
+      if (el) {
+        el.type = 'datetime-local';
+        el.value = toLocalISO(d);
+      }
     });
   });
 
@@ -152,7 +168,7 @@ async function loadWorkspaceConfig(slug) {
 
 /* ---------- Bootstrap ---------- */
 async function init() {
-const projectSlug = (location.pathname.split('/')[1] || '').toLowerCase();
+  const projectSlug = (location.pathname.split('/')[1] || '').toLowerCase();
   await loadWorkspaceConfig(projectSlug);
 
   setupProjectContext();   // اسم المادة + الأعضاء + الفلاتر
